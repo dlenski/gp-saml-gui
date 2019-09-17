@@ -6,6 +6,7 @@ import pprint
 import urllib
 import requests
 import xml.etree.ElementTree as ET
+import os
 
 from sys import stderr
 from binascii import a2b_base64
@@ -17,24 +18,31 @@ gi.require_version('WebKit2', '4.0')
 from gi.repository import WebKit2
 
 class SAMLLoginView:
-    def __init__(self, uri, html=None, verbose=False):
+    def __init__(self, uri, html=None, verbose=False, cookies=None):
         window = Gtk.Window()
 
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
-        # TODO: cookies, see https://stackoverflow.com/questions/48368219/webkit2-webview-how-to-store-cookies-and-reuse-it-again
 
         self.success = False
+
+        self.ctx = WebKit2.WebContext.get_default()
+        self.cookies = self.ctx.get_cookie_manager()
+        if args.cookies:
+            self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
+            self.cookies.set_persistent_storage(args.cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
-        if html:
-            self.wview.load_html(html, uri)
-        else:
-            self.wview.load_uri(uri)
+
         window.resize(500, 500)
         window.add(self.wview)
         window.show_all()
         window.set_title("SAML Login")
         window.connect('delete-event', Gtk.main_quit)
         self.wview.connect('load-changed', self.get_saml_headers)
+
+        if html:
+            self.wview.load_html(html, uri)
+        else:
+            self.wview.load_uri(uri)
 
     def get_saml_headers(self, webview, event):
         if event != WebKit2.LoadEvent.FINISHED:
@@ -61,6 +69,8 @@ def parse_args(args = None):
     p.add_argument('-v','--verbose', default=0, action='count')
     p.add_argument('server', help='GlobalProtect server (portal or gateway)')
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
+    p.add_argument('-C', '--no-cookies', dest='cookies', action='store_const', const=None,
+                   default='~/.gp-saml-gui-cookies', help="Don't use cookies (stored in %(default)s)")
     x = p.add_mutually_exclusive_group()
     x.add_argument('-p','--portal', dest='portal', action='store_true', help='SAML auth to portal')
     x.add_argument('-g','--gateway', dest='portal', action='store_false', help='SAML auth to gateway (default)')
@@ -71,6 +81,9 @@ def parse_args(args = None):
     args = p.parse_args(args = None)
 
     args.extra = dict(x.split('=', 1) for x in args.extra)
+
+    if args.cookies:
+        args.cookies = os.path.expanduser(args.cookies)
 
     if args.cert and args.key:
         args.cert, args.key = (args.cert, args.key), None
@@ -108,7 +121,7 @@ if __name__ == "__main__":
         p.error("Unknown SAML method (%s)" % sam.text)
 
     # spawn WebKit view to do SAML interactive login
-    slv = SAMLLoginView(uri, html, verbose=args.verbose)
+    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies)
     Gtk.main()
     if not slv.success:
         p.error('''Login window closed without producing SAML cookie''')
