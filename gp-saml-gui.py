@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 import os
 
 from sys import stderr
-from binascii import a2b_base64
+from binascii import a2b_base64, b2a_base64
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -74,7 +74,6 @@ class SAMLLoginView:
 
 def parse_args(args = None):
     p = argparse.ArgumentParser()
-    p.add_argument('-v','--verbose', default=0, action='count')
     p.add_argument('server', help='GlobalProtect server (portal or gateway)')
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
     p.add_argument('-C', '--no-cookies', dest='cookies', action='store_const', const=None,
@@ -85,6 +84,10 @@ def parse_args(args = None):
     g = p.add_argument_group('Client certificate')
     g.add_argument('-c','--cert', help='PEM file containing client certificate (and optionally private key)')
     g.add_argument('--key', help='PEM file containing client private key (if not included in same file as certificate)')
+    g = p.add_argument_group('Debugging and advanced options')
+    g.add_argument('-v','--verbose', default=0, action='count')
+    g.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
+    g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
     p.add_argument('extra', nargs='*', help='Extra form field(s) to pass to include in the login query string (e.g. "magic-cookie-value=deadbeef01234567")')
     args = p.parse_args(args = None)
 
@@ -112,23 +115,37 @@ if __name__ == "__main__":
     s.cert = args.cert
 
     # query prelogin.esp and parse SAML bits
-    endpoint = 'https://{}/{}/prelogin.esp'.format(args.server, ('global-protect' if args.portal else 'ssl-vpn'))
-    res = s.post(endpoint, verify=args.verify, data=args.extra)
-    xml = ET.fromstring(res.content)
-    sam = xml.find('saml-auth-method')
-    sr = xml.find('saml-request')
-    if sam is None or sr is None:
-        p.error("This does not appear to be a SAML prelogin response (<saml-auth-method> or <saml-request> tags missing)")
-    elif sam.text == 'POST':
-        html, uri = a2b_base64(sr.text).decode(), None
-    elif sam.text == 'REDIRECT':
-        uri, html = sr.text, None
+    if args.uri:
+        sam, uri, html = 'URI', args.server, None
     else:
-        p.error("Unknown SAML method (%s)" % sam.text)
+        endpoint = 'https://{}/{}/prelogin.esp'.format(args.server, ('global-protect' if args.portal else 'ssl-vpn'))
+        res = s.post(endpoint, verify=args.verify, data=args.extra)
+        xml = ET.fromstring(res.content)
+        sam = xml.find('saml-auth-method')
+        sr = xml.find('saml-request')
+        if sam is None or sr is None:
+            p.error("This does not appear to be a SAML prelogin response (<saml-auth-method> or <saml-request> tags missing)")
+        sam = sam.text
+        sr = a2b_base64(sr.text).decode()
+        if sam == 'POST':
+            html, uri = sr, None
+        elif sam == 'REDIRECT':
+            uri, html = sr, None
+        else:
+            p.error("Unknown SAML method (%s)" % sam)
+
+    # launch external browser for debugging
+    if args.external:
+        print("Got SAML %s, opening external browser for debugging..." % sam, file=stderr)
+        import webbrowser
+        if html:
+            uri = 'data:text/html;base64,' + b2a_base64(html.encode()).decode()
+        webbrowser.open(uri)
+        raise SystemExit
 
     # spawn WebKit view to do SAML interactive login
     if args.verbose:
-        print("Got SAML POST, opening browser...", file=stderr)
+        print("Got SAML %s, opening browser..." % sam, file=stderr)
     slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies)
     Gtk.main()
     if not slv.success:
