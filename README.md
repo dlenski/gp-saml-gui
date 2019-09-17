@@ -15,7 +15,7 @@ Specify the GlobalProtect server URL (portal or gateway) and optional arguments.
 
 This script will pop up a [GTK WebKit2 WebView](https://webkitgtk.org/) window.
 After you succesfully complete the SAML login via web forms, the script will output
-`HOST`, `USER`, and `COOKIE` variables in a form that can be used by
+`GP_HOST`, `GP_USER`, and `GP_COOKIE` variables in a form that can be used by
 [OpenConnect](http://www.infradead.org/openconnect/juniper.html)
 (similar to the output of `openconnect --authenticate`):
 
@@ -33,12 +33,12 @@ SAML response converted to OpenConnect command line invocation:
     echo 'blahblahblah' |
         openconnect --protocol=gp --user='foo12345@corp.company.com' --usergroup=prelogin-cookie:gateway --passwd-on-stdin vpn.company.com
 
-$ echo $HOST; echo $USER; echo $COOKIE
+$ echo $GP_HOST; echo $GP_USER; echo $GP_COOKIE
 https://vpn.company.com/gateway:prelogin-cookie
 foo12345@corp.company.com
 blahblahblah'
 
-$ echo "$COOKIE" | openconnect --protocol=gp -u "$USER" --passwd-on-stdin "$HOST"
+$ echo "$GP_COOKIE" | openconnect --protocol=gp -u "$GP_USER" --passwd-on-stdin "$GP_HOST"
 ```
 
 TODO

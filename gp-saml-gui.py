@@ -148,4 +148,4 @@ if __name__ == "__main__":
         print('''    echo {!r} |\n        openconnect --protocol=gp --user={!r} --usergroup={}:{} --passwd-on-stdin {}\n'''.format(
             cv, un, ('portal' if args.portal else 'gateway'), cn, args.server), file=stderr)
 
-    print("HOST={!r}\nUSER={!r}\nCOOKIE={!r}".format('https://%s/%s:%s' % (args.server, ('portal' if args.portal else 'gateway'), cn), un, cv))
+    print("GP_HOST={!r}\nGP_USER={!r}\nGP_COOKIE={!r}".format('https://%s/%s:%s' % (args.server, ('portal' if args.portal else 'gateway'), cn), un, cv))
