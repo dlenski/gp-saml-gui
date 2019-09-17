@@ -24,6 +24,7 @@ class SAMLLoginView:
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
 
         self.success = False
+        self.verbose = verbose
 
         self.ctx = WebKit2.WebContext.get_default()
         self.cookies = self.ctx.get_cookie_manager()
@@ -38,18 +39,24 @@ class SAMLLoginView:
         window.set_title("SAML Login")
         window.connect('delete-event', Gtk.main_quit)
         self.wview.connect('load-changed', self.get_saml_headers)
+        self.wview.connect('resource-load-started', self.log_resources)
 
         if html:
             self.wview.load_html(html, uri)
         else:
             self.wview.load_uri(uri)
 
+    def log_resources(self, webview, resource, request):
+        if self.verbose > 1:
+            print('%s for resource %s' % (request.get_http_method() or 'Request', resource.get_uri()), file=stderr)
+
     def get_saml_headers(self, webview, event):
         if event != WebKit2.LoadEvent.FINISHED:
             return
 
         mr = webview.get_main_resource()
-        print("Finished loading %s..." % mr.get_uri(), file=stderr)
+        if self.verbose:
+            print("Finished loading %s" % mr.get_uri(), file=stderr)
         rs = mr.get_response()
         h = rs.get_http_headers()
         if h:
@@ -60,7 +67,8 @@ class SAMLLoginView:
             h.foreach(listify)
             self.saml_result = d = dict(l)
             if d:
-                print("Got SAML relevant headers, done: %r" % d, file=stderr)
+                if self.verbose:
+                    print("Got SAML relevant headers, done: %r" % d, file=stderr)
                 self.success = True
                 Gtk.main_quit()
 
@@ -112,15 +120,15 @@ if __name__ == "__main__":
     if sam is None or sr is None:
         p.error("This does not appear to be a SAML prelogin response (<saml-auth-method> or <saml-request> tags missing)")
     elif sam.text == 'POST':
-        print("Got SAML POST content, opening browser...", file=stderr)
         html, uri = a2b_base64(sr.text).decode(), None
     elif sam.text == 'REDIRECT':
-        print("Got SAML REDIRECT to %s, opening browser..." % sr.text, file=stderr)
         uri, html = sr.text, None
     else:
         p.error("Unknown SAML method (%s)" % sam.text)
 
     # spawn WebKit view to do SAML interactive login
+    if args.verbose:
+        print("Got SAML POST, opening browser...", file=stderr)
     slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies)
     Gtk.main()
     if not slv.success:
