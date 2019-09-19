@@ -24,6 +24,7 @@ class SAMLLoginView:
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
 
         self.success = False
+        self.saml_result = {}
         self.verbose = verbose
 
         self.ctx = WebKit2.WebContext.get_default()
@@ -65,10 +66,13 @@ class SAMLLoginView:
                 if (name.startswith('saml-') or name in ('prelogin-cookie', 'portal-userauthcookie')):
                     t.append((name, value))
             h.foreach(listify)
-            self.saml_result = d = dict(l)
-            if d:
-                if self.verbose:
-                    print("Got SAML relevant headers, done: %r" % d, file=stderr)
+            d = dict(l)
+            if d and self.verbose:
+                print("Got SAML result headers: %r" % d, file=stderr)
+            d = self.saml_result
+            d.update(dict(l))
+            if 'saml-username' in d and ('prelogin-cookie' in d or 'portal-userauthcookie' in d):
+                print("Got all required SAML headers, done.", file=stderr)
                 self.success = True
                 Gtk.main_quit()
 
