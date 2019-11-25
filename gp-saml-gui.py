@@ -18,7 +18,7 @@ gi.require_version('WebKit2', '4.0')
 from gi.repository import WebKit2
 
 class SAMLLoginView:
-    def __init__(self, uri, html=None, verbose=False, cookies=None):
+    def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True):
         window = Gtk.Window()
 
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
@@ -28,6 +28,8 @@ class SAMLLoginView:
         self.verbose = verbose
 
         self.ctx = WebKit2.WebContext.get_default()
+        if not args.verify:
+            self.ctx.set_tls_errors_policy(WebKit2.TLSErrorsPolicy.IGNORE)
         self.cookies = self.ctx.get_cookie_manager()
         if args.cookies:
             self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
@@ -150,7 +152,7 @@ if __name__ == "__main__":
     # spawn WebKit view to do SAML interactive login
     if args.verbose:
         print("Got SAML %s, opening browser..." % sam, file=stderr)
-    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies)
+    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies, verify=args.verify)
     Gtk.main()
     if not slv.success:
         p.error('''Login window closed without producing SAML cookie''')
