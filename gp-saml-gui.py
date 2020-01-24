@@ -7,6 +7,7 @@ import urllib
 import requests
 import xml.etree.ElementTree as ET
 import os
+import ssl
 
 from shlex import quote
 from sys import stderr
@@ -126,7 +127,23 @@ if __name__ == "__main__":
         sam, uri, html = 'URI', args.server, None
     else:
         endpoint = 'https://{}/{}/prelogin.esp'.format(args.server, ('global-protect' if args.portal else 'ssl-vpn'))
-        res = s.post(endpoint, verify=args.verify, data=args.extra)
+        print("Looking for SAML auth tags in response to %s..." % endpoint, file=stderr)
+        try:
+            res = s.post(endpoint, verify=args.verify, data=args.extra)
+        except Exception as ex:
+            rootex = ex
+            while True:
+                if isinstance(rootex, ssl.SSLError):
+                    break
+                elif not rootex.__cause__ and not rootex.__context__:
+                    break
+                rootex = rootex.__cause__ or rootex.__context__
+            if isinstance(rootex, ssl.CertificateError):
+                p.error("SSL certificate error (try --no-verify to ignore): %s" % rootex)
+            elif isinstance(rootex, ssl.SSLError):
+                p.error("SSL error: %s" % rootex)
+            else:
+                raise
         xml = ET.fromstring(res.content)
         sam = xml.find('saml-auth-method')
         sr = xml.find('saml-request')
