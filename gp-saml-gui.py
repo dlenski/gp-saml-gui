@@ -8,6 +8,7 @@ import requests
 import xml.etree.ElementTree as ET
 import os
 
+from shlex import quote
 from sys import stderr
 from binascii import a2b_base64, b2a_base64
 
@@ -166,9 +167,15 @@ if __name__ == "__main__":
     else:
         cn = None
 
+    fullpath = ('/global-protect/getconfig.esp' if args.portal else '/ssl-vpn/login.esp')
+    shortpath = ('portal' if args.portal else 'gateway')
     if args.verbose:
         print('''\n\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
-        print('''    echo {!r} |\n        openconnect --protocol=gp --user={!r} --usergroup={}:{} --passwd-on-stdin {}\n'''.format(
-            cv, un, ('portal' if args.portal else 'gateway'), cn, args.server), file=stderr)
+        print('''    echo {} |\n        openconnect --protocol=gp --user={} --usergroup={}:{} --passwd-on-stdin {}\n'''.format(
+            quote(cv), quote(un), quote(shortpath), quote(cn), quote(args.server)), file=stderr)
 
-    print("HOST={!r}\nUSER={!r}\nCOOKIE={!r}".format('https://%s/%s:%s' % (args.server, ('portal' if args.portal else 'gateway'), cn), un, cv))
+    varvals = {
+        'HOST': quote('https://%s/%s:%s' % (args.server, shortpath, cn)),
+        'USER': quote(un), 'COOKIE': quote(cv),
+    }
+    print('\n'.join('%s=%s' % pair for pair in varvals.items()))
