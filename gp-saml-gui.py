@@ -13,6 +13,7 @@ from os import path
 from shlex import quote
 from sys import stderr
 from binascii import a2b_base64, b2a_base64
+from urllib.parse import urlparse
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
@@ -88,10 +89,11 @@ class SAMLLoginView:
             return
 
         mr = webview.get_main_resource()
+        uri = mr.get_uri()
         rs = mr.get_response()
         h = rs.get_http_headers()
         if self.verbose:
-            print('[PAGE   ] Finished loading page %s' % mr.get_uri(), file=stderr)
+            print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
         if not h:
             return
 
@@ -99,7 +101,7 @@ class SAMLLoginView:
         d = {}
         h.foreach(lambda k, v: setitem(d, k, v))
         # filter to interesting headers
-        fd = {name:v for name, v in d.items() if name.startswith('saml-') or name in ('location', 'prelogin-cookie', 'portal-userauthcookie')}
+        fd = {name:v for name, v in d.items() if name.startswith('saml-') or name in ('prelogin-cookie', 'portal-userauthcookie')}
         if fd and self.verbose:
             print("[SAML   ] Got SAML result headers: %r" % fd, file=stderr)
             if self.verbose > 1:
@@ -108,7 +110,7 @@ class SAMLLoginView:
                 mr.get_data(None, self.log_resource_text, ct[0], ct.params.get('charset'), d)
 
         # check if we're done
-        self.saml_result.update(fd)
+        self.saml_result.update(fd, server=urlparse(uri).netloc)
         GLib.timeout_add(1000, self.check_done)
 
     def check_done(self):
@@ -223,6 +225,7 @@ if __name__ == "__main__":
 
     # extract response and convert to OpenConnect command-line
     un = slv.saml_result.get('saml-username')
+    server = slv.saml_result.get('server', args.server)
     for cn in ('prelogin-cookie', 'portal-userauthcookie'):
         cv = slv.saml_result.get(cn)
         if cv:
@@ -235,14 +238,14 @@ if __name__ == "__main__":
     if args.verbose:
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
         print('''    echo {} |\n        openconnect --protocol=gp --user={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
-            quote(cv), quote(un), quote(shortpath), quote(cn), quote(args.server)), file=stderr)
+            quote(cv), quote(un), quote(shortpath), quote(cn), quote(server)), file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
         print('''    test-globalprotect-login.py --user={} -p '' \\\n         https://{}{} {}={}\n'''.format(
-            quote(un), quote(args.server), quote(fullpath), quote(cn), quote(cv)), file=stderr)
+            quote(un), quote(server), quote(fullpath), quote(cn), quote(cv)), file=stderr)
 
     varvals = {
-        'HOST': quote('https://%s/%s:%s' % (args.server, shortpath, cn)),
+        'HOST': quote('https://%s/%s:%s' % (server, shortpath, cn)),
         'USER': quote(un), 'COOKIE': quote(cv),
     }
     print('\n'.join('%s=%s' % pair for pair in varvals.items()))
