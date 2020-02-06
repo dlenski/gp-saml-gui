@@ -8,6 +8,27 @@ Interactive login is, unfortunately, sometimes a necessary alternative to automa
 login via scripts such as
 [zdave/openconnect-gp-okta](https://github.com/zdave/openconnect-gp-okta).
 
+Installation
+============
+
+gp-saml-gui uses GTK, which requires Python 3 bindings.
+
+On Debian / Ubuntu, these are packaged as `python3-gi`, `gir1.2-gtk-3.0`, and
+`gir1.2-webkit2-4.0`:
+
+```
+$ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0
+```
+
+Then, set up a virtual environment that can access these system packages,
+activate it, and install the Python dependencies:
+
+```
+$ virtualenv --python=python3 --system-site-packages venv
+$ . venv/bin/activate
+$ pip install requests
+```
+
 How to use
 ==========
 
@@ -45,7 +66,6 @@ TODO
 ====
 
 * Packaging
-* Explain dependencies
 
 License
 =======
