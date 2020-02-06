@@ -245,7 +245,7 @@ if __name__ == "__main__":
             quote(un), quote(server), quote(fullpath), quote(cn), quote(cv)), file=stderr)
 
     varvals = {
-        'HOST': quote('https://%s/%s:%s' % (server, shortpath, cn)),
-        'USER': quote(un), 'COOKIE': quote(cv),
+        'GP_HOST': quote('https://%s/%s:%s' % (server, shortpath, cn)),
+        'GP_USER': quote(un), 'GP_COOKIE': quote(cv),
     }
     print('\n'.join('%s=%s' % pair for pair in varvals.items()))
