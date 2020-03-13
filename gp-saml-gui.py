@@ -131,8 +131,10 @@ def parse_args(args = None):
     x.add_argument('-K', '--no-cookies', dest='cookies', action='store_const', const=None,
                    help="Don't use or store cookies at all")
     x = p.add_mutually_exclusive_group()
-    x.add_argument('-p','--portal', dest='portal', action='store_true', help='SAML auth to portal')
-    x.add_argument('-g','--gateway', dest='portal', action='store_false', help='SAML auth to gateway (default)')
+    x.add_argument('-p','--portal', dest='interface', action='store_const', const='portal', default='gateway',
+                   help='SAML auth to portal')
+    x.add_argument('-g','--gateway', dest='interface', action='store_const', const='gateway',
+                   help='SAML auth to gateway (default)')
     g = p.add_argument_group('Client certificate')
     g.add_argument('-c','--cert', help='PEM file containing client certificate (and optionally private key)')
     g.add_argument('--key', help='PEM file containing client private key (if not included in same file as certificate)')
@@ -166,11 +168,14 @@ if __name__ == "__main__":
     s.headers['User-Agent'] = 'PAN GlobalProtect'
     s.cert = args.cert
 
+    if2prelogin = {'portal':'global-protect/prelogin.esp','gateway':'ssl-vpn/prelogin.esp'}
+    if2auth = {'portal':'global-protect/getconfig.esp','gateway':'ssl-vpn/login.esp'}
+
     # query prelogin.esp and parse SAML bits
     if args.uri:
         sam, uri, html = 'URI', args.server, None
     else:
-        endpoint = 'https://{}/{}/prelogin.esp'.format(args.server, ('global-protect' if args.portal else 'ssl-vpn'))
+        endpoint = 'https://{}/{}'.format(args.server, if2prelogin[args.interface])
         if args.verbose:
             print("Looking for SAML auth tags in response to %s..." % endpoint, file=stderr)
         try:
@@ -190,10 +195,13 @@ if __name__ == "__main__":
             else:
                 raise
         xml = ET.fromstring(res.content)
+        if xml.tag != 'prelogin-response':
+            p.error("This does not appear to be a GlobalProtect prelogin response\nCheck in browser: {}".format(endpoint))
         sam = xml.find('saml-auth-method')
         sr = xml.find('saml-request')
         if sam is None or sr is None:
-            p.error("This does not appear to be a SAML prelogin response (<saml-auth-method> or <saml-request> tags missing)")
+            p.error("This does not appear to be a SAML prelogin response (<saml-auth-method> or <saml-request> tags missing)\n"
+                    "Check in browser: {}".format(endpoint))
         sam = sam.text
         sr = a2b_base64(sr.text).decode()
         if sam == 'POST':
@@ -226,26 +234,36 @@ if __name__ == "__main__":
     # extract response and convert to OpenConnect command-line
     un = slv.saml_result.get('saml-username')
     server = slv.saml_result.get('server', args.server)
-    for cn in ('prelogin-cookie', 'portal-userauthcookie'):
+
+    for cn, ifh in (('prelogin-cookie','gateway'), ('portal-userauthcookie','portal')):
         cv = slv.saml_result.get(cn)
         if cv:
             break
     else:
-        cn = None
+        cn = ifh = None
+        p.error("Didn't get an expected cookie. Something went wrong.")
 
-    fullpath = ('/global-protect/getconfig.esp' if args.portal else '/ssl-vpn/login.esp')
-    shortpath = ('portal' if args.portal else 'gateway')
     if args.verbose:
+        # Warn about ambiguities
+        if server != args.server and not args.uri:
+            print('''IMPORTANT: During the SAML auth, you were redirected from {} to {}. This probably'''
+                  '''means you should specify {} as the server for final connection, but we're not 100%'''
+                  '''sure about this. You should probably try both.\n'''.format(args.server, server), file=stderr)
+        if ifh != args.interface and not args.uri:
+            print('''IMPORTANT: We started with SAML auth to the {} interface, but received a cookie'''
+                  '''that's associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
+                  file=stderr)
+
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
         print('''    echo {} |\n        openconnect --protocol=gp --user={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
-            quote(cv), quote(un), quote(shortpath), quote(cn), quote(server)), file=stderr)
+            quote(cv), quote(un), quote(ifh), quote(cn), quote(server)), file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
         print('''    test-globalprotect-login.py --user={} -p '' \\\n         https://{}{} {}={}\n'''.format(
-            quote(un), quote(server), quote(fullpath), quote(cn), quote(cv)), file=stderr)
+            quote(un), quote(server), quote(if2auth[ifh]), quote(cn), quote(cv)), file=stderr)
 
     varvals = {
-        'HOST': quote('https://%s/%s:%s' % (server, shortpath, cn)),
+        'HOST': quote('https://%s/%s:%s' % (server, if2auth[ifh], cn)),
         'USER': quote(un), 'COOKIE': quote(cv),
     }
     print('\n'.join('%s=%s' % pair for pair in varvals.items()))
