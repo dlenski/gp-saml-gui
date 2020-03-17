@@ -11,9 +11,9 @@ import ssl
 from operator import setitem
 from os import path
 from shlex import quote
-from sys import stderr
+from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
@@ -122,6 +122,9 @@ class SAMLLoginView:
             Gtk.main_quit()
 
 def parse_args(args = None):
+    clientos_map = dict(linux='Linux', darwin='Mac', win32='Windows', cygwin='Windows')
+    default_clientos = clientos_map.get(platform, 'Windows')
+
     p = argparse.ArgumentParser()
     p.add_argument('server', help='GlobalProtect server (portal or gateway)')
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
@@ -142,6 +145,7 @@ def parse_args(args = None):
     g.add_argument('-v','--verbose', default=0, action='count')
     g.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
     g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
+    g.add_argument('--clientos', choices=set(clientos_map.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
     p.add_argument('extra', nargs='*', help='Extra form field(s) to pass to include in the login query string (e.g. "magic-cookie-value=deadbeef01234567")')
     args = p.parse_args(args = None)
 
@@ -176,10 +180,11 @@ if __name__ == "__main__":
         sam, uri, html = 'URI', args.server, None
     else:
         endpoint = 'https://{}/{}'.format(args.server, if2prelogin[args.interface])
+        data = {'tmp':'tmp', 'kerberos-support':'yes', 'ipv6-support':'yes', 'clientVer':4100, 'clientos':args.clientos, **args.extra}
         if args.verbose:
             print("Looking for SAML auth tags in response to %s..." % endpoint, file=stderr)
         try:
-            res = s.post(endpoint, verify=args.verify, data=args.extra)
+            res = s.post(endpoint, verify=args.verify, data=data)
         except Exception as ex:
             rootex = ex
             while True:
@@ -196,12 +201,14 @@ if __name__ == "__main__":
                 raise
         xml = ET.fromstring(res.content)
         if xml.tag != 'prelogin-response':
-            p.error("This does not appear to be a GlobalProtect prelogin response\nCheck in browser: {}".format(endpoint))
+            p.error("This does not appear to be a GlobalProtect prelogin response\nCheck in browser: {}?{}".format(endpoint, urlencode(data)))
         sam = xml.find('saml-auth-method')
         sr = xml.find('saml-request')
         if sam is None or sr is None:
-            p.error("This does not appear to be a SAML prelogin response (<saml-auth-method> or <saml-request> tags missing)\n"
-                    "Check in browser: {}".format(endpoint))
+            p.error("{} prelogin response does not contain SAML tags (<saml-auth-method> or <saml-request> missing)\n\n"
+                    "Things to try:\n"
+                    "1) Spoof an officially supported OS (e.g. --clientos=Windows or --clientos=Mac)\n"
+                    "2) Check in browser: {}?{}".format(args.interface.title(), endpoint, urlencode(data)))
         sam = sam.text
         sr = a2b_base64(sr.text).decode()
         if sam == 'POST':
