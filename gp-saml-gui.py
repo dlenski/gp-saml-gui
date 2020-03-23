@@ -257,7 +257,7 @@ if __name__ == "__main__":
     if args.verbose:
         # Warn about ambiguities
         if server != args.server and not args.uri:
-            print('''IMPORTANT: During the SAML auth, you were redirected from {} to {1}. This probably '''
+            print('''IMPORTANT: During the SAML auth, you were redirected from {0} to {1}. This probably '''
                   '''means you should specify {1} as the server for final connection, but we're not 100% '''
                   '''sure about this. You should probably try both.\n'''.format(args.server, server), file=stderr)
         if ifh != args.interface and not args.uri:
