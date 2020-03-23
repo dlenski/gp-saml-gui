@@ -114,10 +114,10 @@ Extracted connection cookie from <jnlp>. Use this to connect:
 elif xml is not None and xml.tag == 'prelogin-response' and None not in (xml.find('saml-auth-method'), xml.find('saml-request')):
     import webbrowser
     sam = xml.find('saml-auth-method').text
-    sr = xml.find('saml-request').text
+    sr = a2b_base64(xml.find('saml-request').text)
     if sam == 'POST':
         with NamedTemporaryFile(delete=False, suffix='.html') as tf:
-            tf.write(a2b_base64(sr))
+            tf.write(sr)
         if args.browse:
             print("Got SAML POST, browsing to %s" % tf.name)
             webbrowser.open('file://' + tf.name)

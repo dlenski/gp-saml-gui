@@ -253,22 +253,20 @@ if __name__ == "__main__":
     if args.verbose:
         # Warn about ambiguities
         if server != args.server and not args.uri:
-            print('''IMPORTANT: During the SAML auth, you were redirected from {} to {}. This probably'''
-                  '''means you should specify {} as the server for final connection, but we're not 100%'''
+            print('''IMPORTANT: During the SAML auth, you were redirected from {} to {1}. This probably '''
+                  '''means you should specify {1} as the server for final connection, but we're not 100% '''
                   '''sure about this. You should probably try both.\n'''.format(args.server, server), file=stderr)
         if ifh != args.interface and not args.uri:
-            print('''IMPORTANT: We started with SAML auth to the {} interface, but received a cookie'''
+            print('''IMPORTANT: We started with SAML auth to the {} interface, but received a cookie '''
                   '''that's associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
                   file=stderr)
-
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
         print('''    echo {} |\n        openconnect --protocol=gp --user={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
             quote(cv), quote(un), quote(ifh), quote(cn), quote(server)), file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
-        print('''    test-globalprotect-login.py --user={} -p '' \\\n         https://{}{} {}={}\n'''.format(
+        print('''    test-globalprotect-login.py --user={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
             quote(un), quote(server), quote(if2auth[ifh]), quote(cn), quote(cv)), file=stderr)
-
     varvals = {
         'HOST': quote('https://%s/%s:%s' % (server, if2auth[ifh], cn)),
         'USER': quote(un), 'COOKIE': quote(cv),
