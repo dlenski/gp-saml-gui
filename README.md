@@ -32,16 +32,19 @@ $ pip install requests
 How to use
 ==========
 
-Specify the GlobalProtect server URL (portal or gateway) and optional arguments.
+Specify the GlobalProtect server URL (portal or gateway) and optional
+arguments, such as `--clientos=Windows` (because many GlobalProtect
+servers don't require SAML login, but apparently omit it in their configuration
+for OSes other than Windows).
 
 This script will pop up a [GTK WebKit2 WebView](https://webkitgtk.org/) window.
 After you succesfully complete the SAML login via web forms, the script will output
-`HOST`, `USER`, and `COOKIE` variables in a form that can be used by
+`HOST`, `USER`, `COOKIE`, and `OS` variables in a form that can be used by
 [OpenConnect](http://www.infradead.org/openconnect/juniper.html)
 (similar to the output of `openconnect --authenticate`):
 
 ```sh
-$ eval $( gp-saml-gui.py -v vpn.company.com )
+$ eval $( gp-saml-gui.py --clientos=Windows vpn.company.com )
 Got SAML POST content, opening browser...
 Finished loading about:blank...
 Finished loading https://company.okta.com/app/panw_globalprotect/deadbeefFOOBARba1234/sso/saml...
@@ -52,14 +55,15 @@ Got SAML relevant headers, done: {'prelogin-cookie': 'blahblahblah', 'saml-usern
 SAML response converted to OpenConnect command line invocation:
 
     echo 'blahblahblah' |
-        openconnect --protocol=gp --user='foo12345@corp.company.com' --usergroup=prelogin-cookie:gateway --passwd-on-stdin vpn.company.com
+        openconnect --protocol=gp --user='foo12345@corp.company.com' --os=win --usergroup=prelogin-cookie:gateway --passwd-on-stdin vpn.company.com
 
-$ echo $HOST; echo $USER; echo $COOKIE
+$ echo $HOST; echo $USER; echo $COOKIE; echo $OS
 https://vpn.company.com/gateway:prelogin-cookie
 foo12345@corp.company.com
-blahblahblah'
+blahblahblah
+win
 
-$ echo "$COOKIE" | openconnect --protocol=gp -u "$USER" --passwd-on-stdin "$HOST"
+$ echo "$COOKIE" | openconnect --protocol=gp -u "$USER" --os="$OS" --passwd-on-stdin "$HOST"
 ```
 
 TODO

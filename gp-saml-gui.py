@@ -122,8 +122,9 @@ class SAMLLoginView:
             Gtk.main_quit()
 
 def parse_args(args = None):
-    clientos_map = dict(linux='Linux', darwin='Mac', win32='Windows', cygwin='Windows')
-    default_clientos = clientos_map.get(platform, 'Windows')
+    pf2clientos = dict(linux='Linux', darwin='Mac', win32='Windows', cygwin='Windows')
+    clientos2ocos = dict(Linux='linux-64', Mac='mac-intel', Windows='win')
+    default_clientos = pf2clientos.get(platform, 'Windows')
 
     p = argparse.ArgumentParser()
     p.add_argument('server', help='GlobalProtect server (portal or gateway)')
@@ -145,10 +146,11 @@ def parse_args(args = None):
     g.add_argument('-v','--verbose', default=0, action='count')
     g.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
     g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
-    g.add_argument('--clientos', choices=set(clientos_map.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
+    g.add_argument('--clientos', choices=set(pf2clientos.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
     p.add_argument('extra', nargs='*', help='Extra form field(s) to pass to include in the login query string (e.g. "magic-cookie-value=deadbeef01234567")')
     args = p.parse_args(args = None)
 
+    args.ocos = clientos2ocos[args.clientos]
     args.extra = dict(x.split('=', 1) for x in args.extra)
 
     if args.cookies:
@@ -261,14 +263,14 @@ if __name__ == "__main__":
                   '''that's associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
                   file=stderr)
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
-        print('''    echo {} |\n        openconnect --protocol=gp --user={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
-            quote(cv), quote(un), quote(ifh), quote(cn), quote(server)), file=stderr)
+        print('''    echo {} |\n        openconnect --protocol=gp --user={} --os={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
+            quote(cv), quote(un), quote(args.ocos), quote(ifh), quote(cn), quote(server)), file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
-        print('''    test-globalprotect-login.py --user={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
-            quote(un), quote(server), quote(if2auth[ifh]), quote(cn), quote(cv)), file=stderr)
+        print('''    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
+            quote(un), quote(args.clientos), quote(server), quote(if2auth[ifh]), quote(cn), quote(cv)), file=stderr)
     varvals = {
-        'HOST': quote('https://%s/%s:%s' % (server, if2auth[ifh], cn)),
-        'USER': quote(un), 'COOKIE': quote(cv),
+        'HOST': quote('https://%s/%s:%s' % (server, if2auth[args.interface], cn)),
+        'USER': quote(un), 'COOKIE': quote(cv), 'OS': quote(args.ocos),
     }
     print('\n'.join('%s=%s' % pair for pair in varvals.items()))
