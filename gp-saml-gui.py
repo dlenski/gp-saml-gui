@@ -262,15 +262,15 @@ if __name__ == "__main__":
                   '''sure about this. You should probably try both.\n'''.format(args.server, server), file=stderr)
         if ifh != args.interface and not args.uri:
             print('''IMPORTANT: We started with SAML auth to the {} interface, but received a cookie '''
-                  '''that's associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
+                  '''that's often associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
                   file=stderr)
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
         print('''    echo {} |\n        openconnect --protocol=gp --user={} --os={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
-            quote(cv), quote(un), quote(args.ocos), quote(ifh), quote(cn), quote(server)), file=stderr)
+            quote(cv), quote(un), quote(args.ocos), quote(args.interface), quote(cn), quote(server)), file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
         print('''    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
-            quote(un), quote(args.clientos), quote(server), quote(if2auth[ifh]), quote(cn), quote(cv)), file=stderr)
+            quote(un), quote(args.clientos), quote(server), quote(if2auth[args.interface]), quote(cn), quote(cv)), file=stderr)
     varvals = {
         'HOST': quote('https://%s/%s:%s' % (server, if2auth[args.interface], cn)),
         'USER': quote(un), 'COOKIE': quote(cv), 'OS': quote(args.ocos),
