@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 
-import gi
+try:
+    import gi
+except ImportError:
+    try:
+        import pgi as gi
+    except ImportError:
+        gi = None
+if gi is None:
+    raise ImportError("Either gi (PyGObject) or pgi module is required.")
+
 import argparse
 import pprint
 import urllib
