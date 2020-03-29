@@ -124,6 +124,7 @@ elif xml is not None and xml.tag == 'prelogin-response' and None not in (xml.fin
         else:
             print("Got SAML POST, saved to:\n\t%s" % tf.name)
     elif sam == 'REDIRECT':
+        sr = a2b_base64(sr)
         if args.browse:
             print("Got SAML REDIRECT, browsing to %s" % sr)
             webbrowser.open(sr)
