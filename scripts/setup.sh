@@ -1,5 +1,5 @@
 set -e
-sudo apt-get -y install python3 python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0
+sudo apt-get -y install python3 python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 python3-pip libcanberra-gtk-module libcanberra-gtk3-module
 pip3 install requests
 cd ../..
 sudo rm -rf /opt/gp-saml-gui
