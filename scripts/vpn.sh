@@ -52,7 +52,7 @@ else
   set -e
   sudo rm -rf ~/.vpn.conf
 python3 /opt/gp-saml-gui/gp-saml-gui.py --clientos=Windows $VPN_URL > ~/.vpn.conf
-source ~./vpn.conf
+source ~/.vpn.conf
 python3 /opt/gp-saml-gui/test-globalprotect-login.py --user=${USER} --clientos=Windows -p '' \
          https://redwood.modeln.com/ssl-vpn/login.esp prelogin-cookie=${COOKIE}>login.sh
 chmod +x login.sh
