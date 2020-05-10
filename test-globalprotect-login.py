@@ -101,13 +101,9 @@ if xml is not None and xml.tag == 'jnlp':
     else:
         cert_and_key = ''
 
-    print('''
-
-Extracted connection cookie from <jnlp>. Use this to connect:
-
-    openconnect --protocol=gp --usergroup=gateway %s \\
-        --cookie %s%s
-''' % (quote(endpoint.netloc), quote(cookie), cert_and_key), file=stderr)
+    print('''sudo openconnect --protocol=gp --usergroup=gateway %s \\
+        --cookie %s%s -b 
+''' % (quote(endpoint.netloc), quote(cookie), cert_and_key))
 
 # do SAML request if the result is <prelogin-response><saml...>
 
