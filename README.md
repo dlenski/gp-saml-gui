@@ -21,7 +21,24 @@ How to use
 ```shell script
 mvpn -u globalprotect.example.com
 ```
-# Disconnect t
+# Connect without parameters
+```shell script
+export VPN_URL=redwood.modeln.com
+mvpn 
+```
+or
+```shell script
+echo "export VPN_URL=redwood.modeln.com" >> ~/.bashrc
+source ~/.bashrc
+mvpn
+```
+or
+```shell script
+echo "export VPN_URL=redwood.modeln.com" >> ~/.zshrc
+source ~/.zshrc
+mvpn
+```
+# Disconnect vpn
 ```shell script
 dvpn
 ```
