@@ -44,17 +44,17 @@ if [[ "x${VPN_URL}" = "x" ]]; then
 fi
 cd /opt/gp-saml-gui/scripts
 set +e
-sudo ./login.sh
+./login.sh
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
   echo success
 else
   set -e
-  sudo source vpn.conf
-sudo python3 /opt/gp-saml-gui/gp-saml-gui.py --clientos=Windows $VPN_URL > vpn.conf
-sudo source vpn.conf
-sudo python3 /opt/gp-saml-gui/test-globalprotect-login.py --user=${USER} --clientos=Windows -p '' \
+source ~/.vpn.conf
+python3 /opt/gp-saml-gui/gp-saml-gui.py --clientos=Windows $VPN_URL >~./vpn.conf
+source ~./vpn.conf
+python3 /opt/gp-saml-gui/test-globalprotect-login.py --user=${USER} --clientos=Windows -p '' \
          https://redwood.modeln.com/ssl-vpn/login.esp prelogin-cookie=${COOKIE}>login.sh
-sudo chmod +x login.sh
-sudo ./login.sh
+chmod +x login.sh
+./login.sh
 fi
