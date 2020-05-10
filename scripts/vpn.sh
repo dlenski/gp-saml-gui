@@ -50,7 +50,7 @@ if [ $RESULT -eq 0 ]; then
   echo success
 else
   set -e
-  sudo rm ~/.vpn.conf
+  sudo rm -rf ~/.vpn.conf
 python3 /opt/gp-saml-gui/gp-saml-gui.py --clientos=Windows $VPN_URL > ~/.vpn.conf
 source ~./vpn.conf
 python3 /opt/gp-saml-gui/test-globalprotect-login.py --user=${USER} --clientos=Windows -p '' \
