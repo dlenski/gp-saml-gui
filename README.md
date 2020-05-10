@@ -13,7 +13,7 @@ login via scripts such as
 Installation
 ============
 ```shell script
-curl -sS https://raw.githubusercontent.com/vzakharchenko/gp-saml-gui/master/scripts/setup.sh | sudo bash  
+curl -sSL https://raw.githubusercontent.com/vzakharchenko/gp-saml-gui/master/scripts/setup.sh | sudo bash  
 ```
 How to use
 ==========
