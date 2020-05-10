@@ -28,13 +28,13 @@ mvpn
 ```
 or
 ```shell script
-echo "export VPN_URL=redwood.modeln.com" >> ~/.bashrc
+echo "export VPN_URL=globalprotect.example.com" >> ~/.bashrc
 source ~/.bashrc
 mvpn
 ```
 or
 ```shell script
-echo "export VPN_URL=redwood.modeln.com" >> ~/.zshrc
+echo "export VPN_URL=globalprotect.example.com" >> ~/.zshrc
 source ~/.zshrc
 mvpn
 ```
