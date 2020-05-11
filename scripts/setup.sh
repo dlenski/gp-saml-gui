@@ -20,3 +20,4 @@ sudo ./autogen.sh
 sudo ./configure
 sudo make
 sudo make install
+sudo ldconfig
