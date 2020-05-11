@@ -44,7 +44,7 @@ if [[ "x${VPN_URL}" = "x" ]]; then
 fi
 cd /opt/gp-saml-gui/scripts
 set +e
-./login2.sh
+./login.sh
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
   echo success
