@@ -13,6 +13,7 @@ sudo ln -s  /opt/gp-saml-gui/scripts/disconnectVPN.sh /usr/local/bin/dvpn
 
 echo "install OpenConnect ..."
 sudo apt-get install -y build-essential gettext autoconf automake libproxy-dev libxml2-dev libtool vpnc-scripts pkg-config libgnutls28-dev
+rm -rf /opt/openconnect
 sudo git clone https://github.com/openconnect/openconnect /opt/openconnect
 cd /opt/openconnect
 sudo ./autogen.sh
