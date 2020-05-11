@@ -44,17 +44,19 @@ if [[ "x${VPN_URL}" = "x" ]]; then
 fi
 cd /opt/gp-saml-gui/scripts
 set +e
-./login.sh
+./login2.sh
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
   echo success
 else
   set -e
   sudo rm -rf ~/.vpn.conf
-python3 /opt/gp-saml-gui/gp-saml-gui.py --clientos=Windows $VPN_URL > ~/.vpn.conf
-source ~/.vpn.conf
+  python3 /opt/gp-saml-gui/gp-saml-gui.py --clientos=Windows $VPN_URL > ~/.vpn.conf
+  source ~/.vpn.conf
+  HOST_VPN=`node -e "console.log('$HOST'.replace('esp:','esp ').split(' ')[0])"`
+  COOKIE_NAME=`node -e "console.log('$HOST'.replace('esp:','esp ').split(' ')[1])"`
 python3 /opt/gp-saml-gui/test-globalprotect-login.py --user=${USER} --clientos=Windows -p '' \
-         https://redwood.modeln.com/ssl-vpn/login.esp prelogin-cookie=${COOKIE}>login.sh
+         $HOST_VPN $COOKIE_NAME=${COOKIE}>login.sh
 chmod +x login.sh
-./login.sh
+ ./login.sh
 fi

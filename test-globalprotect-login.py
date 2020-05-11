@@ -102,7 +102,7 @@ if xml is not None and xml.tag == 'jnlp':
         cert_and_key = ''
 
     print('''sudo openconnect --protocol=gp --usergroup=gateway %s \\
-        --cookie %s%s -b 
+        --cookie %s%s  -s /opt/gp-saml-gui/scripts/wrapper-script -b 
 ''' % (quote(endpoint.netloc), quote(cookie), cert_and_key))
 
 # do SAML request if the result is <prelogin-response><saml...>

@@ -237,7 +237,7 @@ if __name__ == "__main__":
         import webbrowser
         if html:
             uri = 'data:text/html;base64,' + b2a_base64(html.encode()).decode()
-        webbrowser.open(uri)
+        webbrowser.get('/usr/bin/google-chrome %s').open(uri)
         raise SystemExit
 
     # spawn WebKit view to do SAML interactive login
