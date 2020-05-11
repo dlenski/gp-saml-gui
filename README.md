@@ -23,7 +23,7 @@ mvpn -u globalprotect.example.com
 ```
 # Connect without parameters
 ```shell script
-export VPN_URL=redwood.modeln.com
+export VPN_URL=globalprotect.example.com
 mvpn 
 ```
 or
