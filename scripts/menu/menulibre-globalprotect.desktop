@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=GlobalProtect
+Comment=GlobalProtect
+Icon=/home/vzakharchenko/Downloads/gp.png
+Exec=mvpn
+Actions=
+Categories=System-Tools;
+OnlyShowIn=Old;

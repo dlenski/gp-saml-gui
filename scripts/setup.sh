@@ -21,3 +21,11 @@ sudo ./configure
 sudo make
 sudo make install
 sudo ldconfig
+
+
+#!/bin/bash
+
+for user  in `users`
+do
+ sudo su user -c "curl -J -L "
+done

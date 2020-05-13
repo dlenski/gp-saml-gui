@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=Connect GlobalProtect
+Comment=Connect GlobalProtect
+Icon=/opt/gp-saml-gui/scripts/menu/gp.png
+Exec=mvpn
+Actions=
+Categories=menulibre-globalprotect;
+OnlyShowIn=Old;
