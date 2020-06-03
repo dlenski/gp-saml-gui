@@ -2,9 +2,15 @@
 
 try:
     import gi
+    gi.require_version('Gtk', '3.0')
+    gi.require_version('WebKit2', '4.0')
+    from gi.repository import Gtk, WebKit2, GLib
 except ImportError:
     try:
         import pgi as gi
+        gi.require_version('Gtk', '3.0')
+        gi.require_version('WebKit2', '4.0')
+        from pgi.repository import Gtk, WebKit2, GLib
     except ImportError:
         gi = None
 if gi is None:
@@ -23,10 +29,6 @@ from shlex import quote
 from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
 from urllib.parse import urlparse, urlencode
-
-gi.require_version('Gtk', '3.0')
-gi.require_version('WebKit2', '4.0')
-from gi.repository import Gtk, WebKit2, GLib
 
 class SAMLLoginView:
     def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True):
