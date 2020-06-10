@@ -274,7 +274,7 @@ if __name__ == "__main__":
                   '''that's often associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
                   file=stderr)
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
-        print('''    echo {} |\n        openconnect --protocol=gp --user={} --os={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
+        print('''    echo {} |\n       sudo openconnect --protocol=gp --user={} --os={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
             quote(cv), quote(un), quote(args.ocos), quote(args.interface), quote(cn), quote(server)), file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
