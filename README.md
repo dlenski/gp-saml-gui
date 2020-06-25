@@ -22,6 +22,13 @@ On Debian / Ubuntu, these are packaged as `python3-gi`, `gir1.2-gtk-3.0`, and
 $ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0
 ```
 
+On Fedora (and possibly RHEL/CentOS) the matching libraries are packaged in
+`python3-gobject`, `gtk3-devel`, and `webkit2gtk3-devel`:
+
+```
+$ sudo dnf install python3-gobject gtk3-devel webkit2gtk3-devel
+```
+
 Then, set up a virtual environment that can access these system packages,
 activate it, and install the Python dependencies:
 
