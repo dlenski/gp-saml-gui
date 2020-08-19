@@ -151,6 +151,11 @@ def parse_args(args = None):
     g = p.add_argument_group('Client certificate')
     g.add_argument('-c','--cert', help='PEM file containing client certificate (and optionally private key)')
     g.add_argument('--key', help='PEM file containing client private key (if not included in same file as certificate)')
+    o = p.add_argument_group('openconnect options')
+    o.add_argument('--script',
+                   help='Invoke SCRIPT to configure the network after connection. (See openconnect documentation).')
+    o.add_argument('--csd-wrapper',
+                   help='Run SCRIPT instead of the trojan binary or script. (See openconnect documentation).')
     g = p.add_argument_group('Debugging and advanced options')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-v','--verbose', default=1, action='count', help='Increase verbosity of explanatory output to stderr')
@@ -263,6 +268,15 @@ if __name__ == "__main__":
         cn = ifh = None
         p.error("Didn't get an expected cookie. Something went wrong.")
 
+    # Shell escape optional pass-through args
+    cli_script = ""
+    if args.script:
+        cli_script = " --script={}".format(quote(args.script))
+
+    cli_csd_wrapper = ""
+    if args.csd_wrapper:
+        cli_csd_wrapper = " --csd-wrapper={}".format(quote(args.csd_wrapper))
+
     if args.verbose:
         # Warn about ambiguities
         if server != args.server and not args.uri:
@@ -274,8 +288,8 @@ if __name__ == "__main__":
                   '''that's often associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
                   file=stderr)
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
-        print('''    echo {} |\n        sudo openconnect --protocol=gp --user={} --os={} --usergroup={}:{} --passwd-on-stdin {}'''.format(
-            quote(cv), quote(un), quote(args.ocos), quote(args.interface), quote(cn), quote(server)), file=stderr)
+        print('''    echo {} |\n        sudo openconnect --protocol=gp --user={} --os={} --usergroup={}:{} --passwd-on-stdin{}{} {}'''.format(
+            quote(cv), quote(un), quote(args.ocos), quote(args.interface), quote(cn), cli_script, cli_csd_wrapper, quote(server)), file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
         print('''    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
