@@ -16,9 +16,10 @@ import urllib
 import requests
 import xml.etree.ElementTree as ET
 import ssl
+import tempfile
 
 from operator import setitem
-from os import path
+from os import path, dup2, execvp
 from shlex import quote
 from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
@@ -163,6 +164,7 @@ def parse_args(args = None):
     g.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
     g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
     g.add_argument('--clientos', choices=set(pf2clientos.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
+    g.add_argument("--run-openconnect", dest='run_openconnect', action='store_true', help='Run openconnect via PolicyKit.')
     p.add_argument('extra', nargs='*', help='Extra form field(s) to pass to include in the login query string (e.g. "magic-cookie-value=deadbeef01234567")')
     args = p.parse_args(args = None)
 
@@ -268,16 +270,26 @@ if __name__ == "__main__":
         cn = ifh = None
         p.error("Didn't get an expected cookie. Something went wrong.")
 
-    # Shell escape optional pass-through args
-    cli_script = ""
-    if args.script:
-        cli_script = " --script={}".format(quote(args.script))
+    suggested_args = [
+        "--protocol=gp",
+        "--user="+un,
+        "--os="+args.ocos,
+        "--usergroup="+args.interface+":"+cn,
+        "--passwd-on-stdin",
+    ]
 
-    cli_csd_wrapper = ""
+    if args.script:
+        suggested_args.append("--script={}".format(args.script))
+
     if args.csd_wrapper:
-        cli_csd_wrapper = " --csd-wrapper={}".format(quote(args.csd_wrapper))
+        suggested_args.append("--csd-wrapper={}".format(args.csd_wrapper))
+
+    suggested_args.append(server)
 
     if args.verbose:
+        suggested_command = '''    echo {} |\n        sudo openconnect {}'''.format(
+            quote(cv), " ".join(map(quote, suggested_args)))
+
         # Warn about ambiguities
         if server != args.server and not args.uri:
             print('''IMPORTANT: During the SAML auth, you were redirected from {0} to {1}. This probably '''
@@ -288,8 +300,7 @@ if __name__ == "__main__":
                   '''that's often associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
                   file=stderr)
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
-        print('''    echo {} |\n        sudo openconnect --protocol=gp --user={} --os={} --usergroup={}:{} --passwd-on-stdin{}{} {}'''.format(
-            quote(cv), quote(un), quote(args.ocos), quote(args.interface), quote(cn), cli_script, cli_csd_wrapper, quote(server)), file=stderr)
+        print(suggested_command, file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
         print('''    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
@@ -299,3 +310,21 @@ if __name__ == "__main__":
         'USER': quote(un), 'COOKIE': quote(cv), 'OS': quote(args.ocos),
     }
     print('\n'.join('%s=%s' % pair for pair in varvals.items()))
+
+    if args.run_openconnect:
+        # Write the token to a temporary file. We exec openconnect and pipe
+        # in this file in.
+        tok_file = tempfile.NamedTemporaryFile(mode='w', encoding='ascii')
+        tok_file.write(cv+"\n")
+
+        temporary = open(tok_file.name, 'r')
+        tok_file.close()
+        dup2(temporary.fileno(), 0)
+
+        polkit_cmd = [
+            "pkexec",
+            "--user", "root",
+            "openconnect",
+        ] + suggested_args
+
+        execvp(polkit_cmd[0], polkit_cmd)
