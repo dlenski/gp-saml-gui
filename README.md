@@ -75,6 +75,21 @@ win
 $ echo "$COOKIE" | openconnect --protocol=gp -u "$USER" --os="$OS" --passwd-on-stdin "$HOST"
 ```
 
+If you specify either the `-P`/`--pkexec-openconnect` or `-S`/`--sudo-openconnect` options, the script
+will automatically invoke OpenConnect as described, using either [`pkexec` from Polkit](https://www.freedesktop.org/software/polkit/docs/0.106/polkit.8.html)
+or [`sudo`](https://www.sudo.ws/), as specified. Extra arguments needed for OpenConnect can be specified by adding ` -- ` to the command line, and then
+appending these. For example:
+
+```sh
+$ gp-saml-gui.py -P --clientos=Windows vpn.company.com -- --csd-wrapper=hip-report.sh
+…
+Launching OpenConnect with pkexec, equivalent to:
+    echo blahblahblahlongrandomcookievalue |
+        sudo openconnect --protocol=gp --user=foo12345@corp.company.com --os=win --usergroup=gateway:prelogin-cookie --passwd-on-stdin vpn.company.com
+<pkexec authentication dialog pops up>
+<openconnect runs>
+```
+
 TODO
 ====
 

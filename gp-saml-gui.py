@@ -152,20 +152,19 @@ def parse_args(args = None):
     g = p.add_argument_group('Client certificate')
     g.add_argument('-c','--cert', help='PEM file containing client certificate (and optionally private key)')
     g.add_argument('--key', help='PEM file containing client private key (if not included in same file as certificate)')
-    o = p.add_argument_group('openconnect options')
-    o.add_argument('--script',
-                   help='Invoke SCRIPT to configure the network after connection. (See openconnect documentation).')
-    o.add_argument('--csd-wrapper',
-                   help='Run SCRIPT instead of the trojan binary or script. (See openconnect documentation).')
     g = p.add_argument_group('Debugging and advanced options')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-v','--verbose', default=1, action='count', help='Increase verbosity of explanatory output to stderr')
     x.add_argument('-q','--quiet', dest='verbose', action='store_const', const=0, help='Reduce verbosity to a minimum')
-    g.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
+    x = p.add_mutually_exclusive_group()
+    x.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
+    x.add_argument('-P','--pkexec-openconnect', action='store_const', dest='exec', const='pkexec', help='Use PolicyKit to exec openconnect')
+    x.add_argument('-S','--sudo-openconnect', action='store_const', dest='exec', const='sudo', help='Use sudo to exec openconnect')
     g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
     g.add_argument('--clientos', choices=set(pf2clientos.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
-    g.add_argument("--run-openconnect", dest='run_openconnect', action='store_true', help='Run openconnect via PolicyKit.')
-    p.add_argument('extra', nargs='*', help='Extra form field(s) to pass to include in the login query string (e.g. "magic-cookie-value=deadbeef01234567")')
+    p.add_argument('-f','--field', dest='extra', action='append', default=[],
+                   help='Extra form field(s) to pass to include in the login query string (e.g. "-f magic-cookie-value=deadbeef01234567")')
+    p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
     args = p.parse_args(args = None)
 
     args.ocos = clientos2ocos[args.clientos]
@@ -270,26 +269,19 @@ if __name__ == "__main__":
         cn = ifh = None
         p.error("Didn't get an expected cookie. Something went wrong.")
 
-    suggested_args = [
+    openconnect_args = [
         "--protocol=gp",
         "--user="+un,
         "--os="+args.ocos,
         "--usergroup="+args.interface+":"+cn,
         "--passwd-on-stdin",
-    ]
+        server
+    ] + args.openconnect_extra
 
-    if args.script:
-        suggested_args.append("--script={}".format(args.script))
-
-    if args.csd_wrapper:
-        suggested_args.append("--csd-wrapper={}".format(args.csd_wrapper))
-
-    suggested_args.append(server)
+    openconnect_command = '''    echo {} |\n        sudo openconnect {}'''.format(
+        quote(cv), " ".join(map(quote, openconnect_args)))
 
     if args.verbose:
-        suggested_command = '''    echo {} |\n        sudo openconnect {}'''.format(
-            quote(cv), " ".join(map(quote, suggested_args)))
-
         # Warn about ambiguities
         if server != args.server and not args.uri:
             print('''IMPORTANT: During the SAML auth, you were redirected from {0} to {1}. This probably '''
@@ -300,31 +292,28 @@ if __name__ == "__main__":
                   '''that's often associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
                   file=stderr)
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
-        print(suggested_command, file=stderr)
+        print(openconnect_command, file=stderr)
 
         print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
         print('''    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
             quote(un), quote(args.clientos), quote(server), quote(if2auth[args.interface]), quote(cn), quote(cv)), file=stderr)
-    varvals = {
-        'HOST': quote('https://%s/%s:%s' % (server, if2auth[args.interface], cn)),
-        'USER': quote(un), 'COOKIE': quote(cv), 'OS': quote(args.ocos),
-    }
-    print('\n'.join('%s=%s' % pair for pair in varvals.items()))
 
-    if args.run_openconnect:
-        # Write the token to a temporary file. We exec openconnect and pipe
-        # in this file in.
-        tok_file = tempfile.NamedTemporaryFile(mode='w', encoding='ascii')
-        tok_file.write(cv+"\n")
+    if args.exec:
+        print('''Launching OpenConnect with {}, equivalent to:\n{}'''.format(args.exec, openconnect_command))
+        with tempfile.NamedTemporaryFile('w+') as tf:
+            tf.write(cv)
+            tf.flush()
+            tf.seek(0)
+            dup2(tf.fileno(), 0) # redirect stdin from this file
+            if args.exec == 'pkexec':
+                cmd = ["pkexec", "--user", "root", "openconnect"] + openconnect_args
+            elif args.exec == 'sudo':
+                cmd = ["sudo", "openconnect"] + openconnect_args
+            execvp(cmd[0], cmd)
 
-        temporary = open(tok_file.name, 'r')
-        tok_file.close()
-        dup2(temporary.fileno(), 0)
-
-        polkit_cmd = [
-            "pkexec",
-            "--user", "root",
-            "openconnect",
-        ] + suggested_args
-
-        execvp(polkit_cmd[0], polkit_cmd)
+    else:
+        varvals = {
+            'HOST': quote('https://%s/%s:%s' % (server, if2auth[args.interface], cn)),
+            'USER': quote(un), 'COOKIE': quote(cv), 'OS': quote(args.ocos),
+        }
+        print('\n'.join('%s=%s' % pair for pair in varvals.items()))
