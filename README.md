@@ -29,6 +29,13 @@ On Fedora (and possibly RHEL/CentOS) the matching libraries are packaged in
 $ sudo dnf install python3-gobject gtk3-devel webkit2gtk3-devel
 ```
 
+On Arch Linux, the libraries are packaged in `gtk3`, `gobject-introspection`
+and `webkit2gtk`:
+
+```
+$ sudo pacman -S gtk3 gobject-introspection webkit2gtk
+```
+
 Then, set up a virtual environment that can access these system packages,
 activate it, and install the Python dependencies:
 
