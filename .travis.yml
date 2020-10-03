@@ -18,4 +18,4 @@ install:
   - pip install -r requirements.txt
 
 script:
-  - "python3 -m compileall -q gp-saml-gui.py"   # byte-compile
+  - python3 setup.py test

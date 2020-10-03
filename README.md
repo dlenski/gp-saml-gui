@@ -36,13 +36,17 @@ and `webkit2gtk`:
 $ sudo pacman -S gtk3 gobject-introspection webkit2gtk
 ```
 
-Then, set up a virtual environment that can access these system packages,
-activate it, and install the Python dependencies:
+Install gp-saml-gui itself using `pip`:
 
 ```
-$ virtualenv --python=python3 --system-site-packages venv
-$ . venv/bin/activate
-$ pip install requests
+$ pip3 install https://github.com/dlenski/gp-saml-gui/archive/master.zip
+...
+$ gp-saml-gui
+usage: gp-saml-gui [-h] [--no-verify] [-C COOKIES | -K] [-p | -g] [-c CERT]
+                   [--key KEY] [-v | -q] [-x | -P | -S] [-u]
+                   [--clientos {Windows,Linux,Mac}] [-f EXTRA]
+                   server [openconnect_extra [openconnect_extra ...]]
+gp-saml-gui: error: the following arguments are required: server, openconnect_extra
 ```
 
 How to use
@@ -60,7 +64,7 @@ After you succesfully complete the SAML login via web forms, the script will out
 (similar to the output of `openconnect --authenticate`):
 
 ```sh
-$ eval $( gp-saml-gui.py --clientos=Windows vpn.company.com )
+$ eval $( gp-saml-gui --clientos=Windows vpn.company.com )
 Got SAML POST content, opening browser...
 Finished loading about:blank...
 Finished loading https://company.okta.com/app/panw_globalprotect/deadbeefFOOBARba1234/sso/saml...
@@ -88,7 +92,7 @@ or [`sudo`](https://www.sudo.ws/), as specified. Extra arguments needed for Open
 appending these. For example:
 
 ```sh
-$ gp-saml-gui.py -P --clientos=Windows vpn.company.com -- --csd-wrapper=hip-report.sh
+$ gp-saml-gui -P --clientos=Windows vpn.company.com -- --csd-wrapper=hip-report.sh
 …
 Launching OpenConnect with pkexec, equivalent to:
     echo blahblahblahlongrandomcookievalue |
@@ -96,11 +100,6 @@ Launching OpenConnect with pkexec, equivalent to:
 <pkexec authentication dialog pops up>
 <openconnect runs>
 ```
-
-TODO
-====
-
-* Packaging
 
 License
 =======
