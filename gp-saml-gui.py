@@ -41,12 +41,12 @@ class SAMLLoginView:
         self.verbose = verbose
 
         self.ctx = WebKit2.WebContext.get_default()
-        if not args.verify:
+        if not verify:
             self.ctx.set_tls_errors_policy(WebKit2.TLSErrorsPolicy.IGNORE)
         self.cookies = self.ctx.get_cookie_manager()
-        if args.cookies:
+        if cookies:
             self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
-            self.cookies.set_persistent_storage(args.cookies, WebKit2.CookiePersistentStorage.TEXT)
+            self.cookies.set_persistent_storage(cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
 
         window.resize(500, 500)
@@ -126,7 +126,7 @@ class SAMLLoginView:
     def check_done(self):
         d = self.saml_result
         if 'saml-username' in d and ('prelogin-cookie' in d or 'portal-userauthcookie' in d):
-            if args.verbose:
+            if self.verbose:
                 print("[SAML   ] Got all required SAML headers, done.", file=stderr)
             self.success = True
             Gtk.main_quit()
@@ -165,7 +165,7 @@ def parse_args(args = None):
     p.add_argument('-f','--field', dest='extra', action='append', default=[],
                    help='Extra form field(s) to pass to include in the login query string (e.g. "-f magic-cookie-value=deadbeef01234567")')
     p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
-    args = p.parse_args(args = None)
+    args = p.parse_args(args)
 
     args.ocos = clientos2ocos[args.clientos]
     args.extra = dict(x.split('=', 1) for x in args.extra)
@@ -184,8 +184,8 @@ def parse_args(args = None):
 
     return p, args
 
-if __name__ == "__main__":
-    p, args = parse_args()
+def main(args = None):
+    p, args = parse_args(args)
 
     s = requests.Session()
     s.headers['User-Agent'] = 'PAN GlobalProtect'
@@ -317,3 +317,6 @@ if __name__ == "__main__":
             'USER': quote(un), 'COOKIE': quote(cv), 'OS': quote(args.ocos),
         }
         print('\n'.join('%s=%s' % pair for pair in varvals.items()))
+
+if __name__ == "__main__":
+    main()
