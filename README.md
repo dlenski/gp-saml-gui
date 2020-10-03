@@ -1,10 +1,25 @@
-[![Build Status](https://api.travis-ci.org/dlenski/gp-saml-gui.png)](https://travis-ci.org/dlenski/gp-saml-gui)
-
 gp-saml-gui
 ===========
 
+[![Build Status](https://api.travis-ci.org/dlenski/gp-saml-gui.png)](https://travis-ci.org/dlenski/gp-saml-gui)
+
+Table of Contents
+=================
+
+  * [Introduction](#introduction)
+  * [Installation](#installation)
+    * [First, non-Python Dependencies](#first-non-python-dependencies)
+    * [Second, gp-saml-gui itself](#second-gp-saml-gui-itself)
+  * [How to use](#how-to-use)
+  * [License](#license)
+
+Introduction
+============
+
 This is a helper script to allow you to interactively login to a GlobalProtect VPN
-that uses SAML authentication.
+that uses [SAML](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)
+authentication, so that you can subsequently connect with [OpenConnect](https://www.infradead.org/openconnect).
+(The GlobalProtect protocol is supported in OpenConnect v8.0 or newer; v8.06+ is recommended.)
 
 Interactive login is, unfortunately, sometimes a necessary alternative to automated
 login via scripts such as
@@ -12,6 +27,9 @@ login via scripts such as
 
 Installation
 ============
+
+First, non-Python Dependencies
+------------------------------
 
 gp-saml-gui uses GTK, which requires Python 3 bindings.
 
@@ -35,6 +53,9 @@ and `webkit2gtk`:
 ```
 $ sudo pacman -S gtk3 gobject-introspection webkit2gtk
 ```
+
+Second, gp-saml-gui itself
+--------------------------
 
 Install gp-saml-gui itself using `pip`:
 
