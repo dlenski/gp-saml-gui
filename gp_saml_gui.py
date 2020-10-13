@@ -25,7 +25,7 @@ import ssl
 import tempfile
 
 from operator import setitem
-from os import path, dup2, execvp
+from os import path, dup2, execvp, remove
 from shlex import quote
 from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
@@ -307,6 +307,7 @@ def main(args = None):
             tf.flush()
             tf.seek(0)
             dup2(tf.fileno(), 0) # redirect stdin from this file
+            remove(tf.name)
             if args.exec == 'pkexec':
                 cmd = ["pkexec", "--user", "root", "openconnect"] + openconnect_args
             elif args.exec == 'sudo':
