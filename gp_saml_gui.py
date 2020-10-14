@@ -302,16 +302,18 @@ def main(args = None):
 
     if args.exec:
         print('''Launching OpenConnect with {}, equivalent to:\n{}'''.format(args.exec, openconnect_command))
-        with tempfile.NamedTemporaryFile('w+') as tf:
+        with tempfile.TemporaryFile('w+') as tf:
             tf.write(cv)
             tf.flush()
             tf.seek(0)
-            dup2(tf.fileno(), 0) # redirect stdin from this file
-            if args.exec == 'pkexec':
-                cmd = ["pkexec", "--user", "root", "openconnect"] + openconnect_args
-            elif args.exec == 'sudo':
-                cmd = ["sudo", "openconnect"] + openconnect_args
-            execvp(cmd[0], cmd)
+            # redirect stdin from this file, before it is closed by the context manager
+            # (it will remain accessible via the open file descriptor)
+            dup2(tf.fileno(), 0)
+        if args.exec == 'pkexec':
+            cmd = ["pkexec", "--user", "root", "openconnect"] + openconnect_args
+        elif args.exec == 'sudo':
+            cmd = ["sudo", "openconnect"] + openconnect_args
+        execvp(cmd[0], cmd)
 
     else:
         varvals = {
