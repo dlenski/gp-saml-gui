@@ -224,6 +224,14 @@ def main(args = None):
         xml = ET.fromstring(res.content)
         if xml.tag != 'prelogin-response':
             p.error("This does not appear to be a GlobalProtect prelogin response\nCheck in browser: {}?{}".format(endpoint, urlencode(data)))
+        status = xml.find('status')
+        if status != None and status.text != 'Success':
+            msg = xml.find('msg')
+            if msg != None and msg.text == 'GlobalProtect {} does not exist'.format(args.interface):
+                p.error("{} interface does not exist; specify {} instead".format(
+                    args.interface.title(), '--portal' if args.interface=='gateway' else '--gateway'))
+            else:
+                p.error("Error in {} prelogin response: {}".format(args.interface, msg.text))
         sam = xml.find('saml-auth-method')
         sr = xml.find('saml-request')
         if sam is None or sr is None:
