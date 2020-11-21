@@ -33,6 +33,7 @@ from urllib.parse import urlparse, urlencode
 
 class SAMLLoginView:
     def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True):
+        Gtk.init()
         window = Gtk.Window()
 
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
