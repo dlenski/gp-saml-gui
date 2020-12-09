@@ -1,8 +1,6 @@
 gp-saml-gui
 ===========
 
-[![Build Status](https://api.travis-ci.org/dlenski/gp-saml-gui.png)](https://travis-ci.org/dlenski/gp-saml-gui)
-
 Table of Contents
 =================
 
