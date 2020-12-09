@@ -148,10 +148,10 @@ def parse_args(args = None):
     x.add_argument('-K', '--no-cookies', dest='cookies', action='store_const', const=None,
                    help="Don't use or store cookies at all")
     x = p.add_mutually_exclusive_group()
-    x.add_argument('-p','--portal', dest='interface', action='store_const', const='portal', default='gateway',
-                   help='SAML auth to portal')
-    x.add_argument('-g','--gateway', dest='interface', action='store_const', const='gateway',
-                   help='SAML auth to gateway (default)')
+    x.add_argument('-g','--gateway', dest='interface', action='store_const', const='gateway', default='portal',
+                   help='SAML auth to gateway')
+    x.add_argument('-p','--portal', dest='interface', action='store_const', const='portal',
+                   help='SAML auth to portal (default)')
     g = p.add_argument_group('Client certificate')
     g.add_argument('-c','--cert', help='PEM file containing client certificate (and optionally private key)')
     g.add_argument('--key', help='PEM file containing client private key (if not included in same file as certificate)')

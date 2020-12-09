@@ -85,7 +85,7 @@ After you succesfully complete the SAML login via web forms, the script will out
 (similar to the output of `openconnect --authenticate`):
 
 ```sh
-$ eval $( gp-saml-gui --clientos=Windows vpn.company.com )
+$ eval $( gp-saml-gui --gateway --clientos=Windows vpn.company.com )
 Got SAML POST content, opening browser...
 Finished loading about:blank...
 Finished loading https://company.okta.com/app/panw_globalprotect/deadbeefFOOBARba1234/sso/saml...
@@ -113,7 +113,7 @@ or [`sudo`](https://www.sudo.ws/), as specified. Extra arguments needed for Open
 appending these. For example:
 
 ```sh
-$ gp-saml-gui -P --clientos=Windows vpn.company.com -- --csd-wrapper=hip-report.sh
+$ gp-saml-gui -P --gateway --clientos=Windows vpn.company.com -- --csd-wrapper=hip-report.sh
 …
 Launching OpenConnect with pkexec, equivalent to:
     echo blahblahblahlongrandomcookievalue |
