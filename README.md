@@ -1,6 +1,8 @@
 gp-saml-gui
 ===========
 
+[![Test Workflow Status](https://github.com/dlenski/gp-saml-gui/workflows/test/badge.svg)](https://github.com/dlenski/gp-saml-gui/actions?query=workflow%3Atest)
+
 Table of Contents
 =================
 

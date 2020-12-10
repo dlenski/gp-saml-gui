@@ -1,12 +1,9 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-# vim:ts=2:shiftwidth=2:expandtab
 
-name: Python package
+name: test
 
-on:
-  push:
-  pull_request:
+on: [ push, pull_request]
 
 jobs:
   build:
@@ -34,7 +31,7 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Actual compile test
+    - name: Verify successful compilation
       run: |
         python -m py_compile gp_saml_gui.py
         python -m py_compile test-globalprotect-login.py
