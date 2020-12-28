@@ -1,0 +1,77 @@
+.TH gp-saml-gui 1 2020-12-28 "gp-saml-gui"
+.SH NAME
+gp-saml-gui \- login to a GlobalProtect VPN that uses SAML authentication
+.SH SYNOPSIS
+.B gp-saml-gui
+\fB-h [--no-verify] [-C COOKIES | -K] [-p | -g] [-c CERT]
+[--key KEY] [-v | -q] [-x | -P | -S] [-u]
+[--clientos {Windows,Linux,Mac}] [-f EXTRA]\fR
+\fIserver\fR
+\fB[openconnect_extra [openconnect_extra ...]]\fR
+.SH DESCRIPTION
+This is a helper script to allow you to interactively login to a
+GlobalProtect VPN that uses SAML authentication, so that you can
+subsequently connect with OpenConnect.
+
+Interactive login is, unfortunately, sometimes a necessary
+alternative to automated login via scripts.
+.SH OPTIONS
+.TP
+.B \fIserver\fR
+GlobalProtect server (portal or gateway)
+.TP
+.B --no-verify
+Ignore invalid server certificate
+.TP
+.B -C, --cookies
+Use and store cookies in this file
+.TP
+.B -K, --no-cookies
+Don't use or store cookies at all
+.TP
+.B -g, --gateway
+Don't use or store cookies at all
+.TP
+.B -p, --portal
+SAML auth to portal (default)
+.TP
+.B -c, --cert
+PEM file containing client certificate (and optionally private key)
+.TP
+.B --key
+PEM file containing client private key (if not included in same file
+as certificate)
+.TP
+.B -v, --verbose
+Increase verbosity of explanatory output to stderr
+.TP
+.B -q, --quiet
+Reduce verbosity to a minimum
+.TP
+.B -x, --external
+Launch external browser (for debugging)
+.TP
+.B -P, --pkexec-openconnect
+Use PolicyKit to exec openconnect
+.TP
+.B -S, --sudo-openconnect
+Use sudo to exec openconnect
+.TP
+.B -u, --uri
+Treat server as the complete URI of the SAML entry point, rather
+than GlobalProtect server
+.TP
+.B --clientos
+clientos value to send
+.TP
+.B -f, --field
+Extra form field(s) to pass to include in the login query string
+(e.g. "-f magic-cookie-value=deadbeef01234567")
+.TP
+.B openconnect_extra
+Extra arguments to include in output OpenConnect command-line
+.SH COPYRIGHT
+This manual page is Copyright 2020 Luca Falavigna <dktrkranz@debian.org>.
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU General Public License, Version 3 or any later
+version published by the Free Software Foundation.
