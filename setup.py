@@ -22,5 +22,5 @@ setup(name="gp-saml-gui",
       url="https://github.com/dlenski/gp-saml-gui",
       py_modules = ['gp_saml_gui'],
       entry_points={ 'console_scripts': [ 'gp-saml-gui=gp_saml_gui:main' ] },
-      data_files=[('share/man/man1', ['gp-saml-gui.1'])],
+      data_files=[('share/man/man8', ['gp-saml-gui.8'])],
       )
