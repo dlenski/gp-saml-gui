@@ -2,30 +2,52 @@
 .SH NAME
 gp-saml-gui \- login to a GlobalProtect VPN that uses SAML authentication
 .SH SYNOPSIS
-.B gp-saml-gui
-\fB-h [--no-verify] [-C COOKIES | -K] [-p | -g] [-c CERT]
-[--key KEY] [-v | -q] [-x | -P | -S] [-u]
-[--clientos {Windows,Linux,Mac}] [-f EXTRA]\fR
-\fIserver\fR
-\fB[openconnect_extra [openconnect_extra ...]]\fR
+.SY gp-saml-gui
+.OP -h
+.OP --no-verify
+.OP -C COOKIES
+.OP -K
+.OP -p
+.OP -g
+.OP -c CERT]
+.OP --key KEY
+.OP -v
+.OP -q
+.OP -x
+.OP -P
+.OP -S
+.OP -u
+.OP --clientos {Windows,Linux,Mac}
+.OP -f EXTRA
+.B server
+.OP --
+.OP openconnect_extra ...
+.YS
+
 .SH DESCRIPTION
 This is a helper script to allow you to interactively login to a
 GlobalProtect VPN that uses SAML authentication, so that you can
 subsequently connect with OpenConnect.
 
-Interactive login is, unfortunately, sometimes a necessary
-alternative to automated login via scripts.
+Some GlobalProtect VPNs which use SAML authentication are amenable
+to automated login, using tools such as
+.BR openconnect-gp-okta ,
+however interactive login is useful for debugging and is a necessary
+alternative for some VPNs.
+
 .SH OPTIONS
 .TP
-\fIPositional arguments\fR
+.I Positional arguments
 .IP
 .B server
-GlobalProtect server (portal or gateway)
+Hostname or IP address of GlobalProtect server (portal or gateway)
 .IP
 .B openconnect_extra
-Extra arguments to include in output OpenConnect command-line
+Extra arguments to include in output OpenConnect command-line (these should be preceded by
+.B --
+so that they are not parsed as gp-saml-gui's own options).
 .TP
-\fIOptional arguments\fR
+.I Optional arguments
 .IP
 .B --h, --help
 Show help message and exit
@@ -55,7 +77,7 @@ Reduce verbosity to a minimum
 Launch external browser (for debugging)
 .IP
 .B -P, --pkexec-openconnect
-Use PolicyKit to exec openconnect
+Use PolicyKit (\fBpkexec\fR) to exec openconnect
 .IP
 .B -S, --sudo-openconnect
 Use sudo to exec openconnect
@@ -64,7 +86,7 @@ Use sudo to exec openconnect
 Extra form field(s) to pass to include in the login query string
 (e.g. "-f magic-cookie-value=deadbeef01234567")
 .TP
-\fIClient certificate\fR
+.I Client certificate
 .IP
 .B -c, --cert
 PEM file containing client certificate (and optionally private key)
@@ -73,7 +95,7 @@ PEM file containing client certificate (and optionally private key)
 PEM file containing client private key (if not included in same file
 as certificate)
 .TP
-\fIDebugging and advanced options\fR
+.I Debugging and advanced options
 .IP
 .B -u, --uri
 Treat server as the complete URI of the SAML entry point, rather
@@ -81,8 +103,16 @@ than GlobalProtect server
 .IP
 .B --clientos {Mac,Linux,Windows}
 clientos value to send
+
+.SH SEE ALSO
+.BR openconnect (8)
+
+.B openconnect-gp-okta
+(https://github.com/zdave/openconnect-gp-okta)
+
 .SH COPYRIGHT
-This manual page is Copyright 2020 Luca Falavigna <dktrkranz@debian.org>.
+This manual page is Copyright 2020 Luca Falavigna <dktrkranz@debian.org>
+and Daniel Lenski <dlenski@gmail.com>.
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU General Public License, Version 3 or any later
 version published by the Free Software Foundation.
