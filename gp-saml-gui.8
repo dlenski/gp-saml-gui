@@ -1,0 +1,88 @@
+.TH gp-saml-gui 8 2020-12-28 "gp-saml-gui"
+.SH NAME
+gp-saml-gui \- login to a GlobalProtect VPN that uses SAML authentication
+.SH SYNOPSIS
+.B gp-saml-gui
+\fB-h [--no-verify] [-C COOKIES | -K] [-p | -g] [-c CERT]
+[--key KEY] [-v | -q] [-x | -P | -S] [-u]
+[--clientos {Windows,Linux,Mac}] [-f EXTRA]\fR
+\fIserver\fR
+\fB[openconnect_extra [openconnect_extra ...]]\fR
+.SH DESCRIPTION
+This is a helper script to allow you to interactively login to a
+GlobalProtect VPN that uses SAML authentication, so that you can
+subsequently connect with OpenConnect.
+
+Interactive login is, unfortunately, sometimes a necessary
+alternative to automated login via scripts.
+.SH OPTIONS
+.TP
+\fIPositional arguments\fR
+.IP
+.B server
+GlobalProtect server (portal or gateway)
+.IP
+.B openconnect_extra
+Extra arguments to include in output OpenConnect command-line
+.TP
+\fIOptional arguments\fR
+.IP
+.B --h, --help
+Show help message and exit
+.IP
+.B --no-verify
+Ignore invalid server certificate
+.IP
+.B -C, --cookies
+Use and store cookies in this file
+.IP
+.B -K, --no-cookies
+Don't use or store cookies at all
+.IP
+.B -g, --gateway
+SAML auth to gateway
+.IP
+.B -p, --portal
+SAML auth to portal (default)
+.IP
+.B -v, --verbose
+Increase verbosity of explanatory output to stderr
+.IP
+.B -q, --quiet
+Reduce verbosity to a minimum
+.IP
+.B -x, --external
+Launch external browser (for debugging)
+.IP
+.B -P, --pkexec-openconnect
+Use PolicyKit to exec openconnect
+.IP
+.B -S, --sudo-openconnect
+Use sudo to exec openconnect
+.IP
+.B -f, --field
+Extra form field(s) to pass to include in the login query string
+(e.g. "-f magic-cookie-value=deadbeef01234567")
+.TP
+\fIClient certificate\fR
+.IP
+.B -c, --cert
+PEM file containing client certificate (and optionally private key)
+.IP
+.B --key
+PEM file containing client private key (if not included in same file
+as certificate)
+.TP
+\fIDebugging and advanced options\fR
+.IP
+.B -u, --uri
+Treat server as the complete URI of the SAML entry point, rather
+than GlobalProtect server
+.IP
+.B --clientos {Mac,Linux,Windows}
+clientos value to send
+.SH COPYRIGHT
+This manual page is Copyright 2020 Luca Falavigna <dktrkranz@debian.org>.
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU General Public License, Version 3 or any later
+version published by the Free Software Foundation.
