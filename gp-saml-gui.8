@@ -17,59 +17,70 @@ Interactive login is, unfortunately, sometimes a necessary
 alternative to automated login via scripts.
 .SH OPTIONS
 .TP
-.B \fIserver\fR
+\fIPositional arguments\fR
+.IP
+.B server
 GlobalProtect server (portal or gateway)
+.IP
+.B openconnect_extra
+Extra arguments to include in output OpenConnect command-line
 .TP
+\fIOptional arguments\fR
+.IP
+.B --h, --help
+Show help message and exit
+.IP
 .B --no-verify
 Ignore invalid server certificate
-.TP
+.IP
 .B -C, --cookies
 Use and store cookies in this file
-.TP
+.IP
 .B -K, --no-cookies
 Don't use or store cookies at all
-.TP
+.IP
 .B -g, --gateway
-Don't use or store cookies at all
-.TP
+SAML auth to gateway
+.IP
 .B -p, --portal
 SAML auth to portal (default)
-.TP
-.B -c, --cert
-PEM file containing client certificate (and optionally private key)
-.TP
-.B --key
-PEM file containing client private key (if not included in same file
-as certificate)
-.TP
+.IP
 .B -v, --verbose
 Increase verbosity of explanatory output to stderr
-.TP
+.IP
 .B -q, --quiet
 Reduce verbosity to a minimum
-.TP
+.IP
 .B -x, --external
 Launch external browser (for debugging)
-.TP
+.IP
 .B -P, --pkexec-openconnect
 Use PolicyKit to exec openconnect
-.TP
+.IP
 .B -S, --sudo-openconnect
 Use sudo to exec openconnect
-.TP
-.B -u, --uri
-Treat server as the complete URI of the SAML entry point, rather
-than GlobalProtect server
-.TP
-.B --clientos
-clientos value to send
-.TP
+.IP
 .B -f, --field
 Extra form field(s) to pass to include in the login query string
 (e.g. "-f magic-cookie-value=deadbeef01234567")
 .TP
-.B openconnect_extra
-Extra arguments to include in output OpenConnect command-line
+\fIClient certificate\fR
+.IP
+.B -c, --cert
+PEM file containing client certificate (and optionally private key)
+.IP
+.B --key
+PEM file containing client private key (if not included in same file
+as certificate)
+.TP
+\fIDebugging and advanced options\fR
+.IP
+.B -u, --uri
+Treat server as the complete URI of the SAML entry point, rather
+than GlobalProtect server
+.IP
+.B --clientos {Mac,Linux,Windows}
+clientos value to send
 .SH COPYRIGHT
 This manual page is Copyright 2020 Luca Falavigna <dktrkranz@debian.org>.
 Permission is granted to copy, distribute and/or modify this document
