@@ -175,7 +175,7 @@ def parse_args(args = None):
     g.add_argument('--key', help='PEM file containing client private key (if not included in same file as certificate)')
     g = p.add_argument_group('Debugging and advanced options')
     x = p.add_mutually_exclusive_group()
-    x.add_argument('-v','--verbose', default=1, action='count', help='Increase verbosity of explanatory output to stderr')
+    x.add_argument('-v','--verbose', default=0, action='count', help='Increase verbosity of explanatory output to stderr')
     x.add_argument('-q','--quiet', dest='verbose', action='store_const', const=0, help='Reduce verbosity to a minimum')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
