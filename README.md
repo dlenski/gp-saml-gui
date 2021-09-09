@@ -25,6 +25,14 @@ Interactive login is, unfortunately, sometimes a necessary alternative to automa
 login via scripts such as
 [zdave/openconnect-gp-okta](https://github.com/zdave/openconnect-gp-okta).
 
+This script is known to work with many GlobalProtect VPNs using the major single-sign-on (SSO) providers:
+
+- Okta (sign-in URLs typically `https://<company>.okta.com/login/*`)
+- Microsoft (sign-in URLs typically `https://login.microsoftonline.com/*`)
+
+Please search and file [issues](https://github.com/dlenski/gp-saml-gui/issues) if you can report success
+or failure with other SSO SAML providers.
+
 Installation
 ============
 
