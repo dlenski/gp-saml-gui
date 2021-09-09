@@ -1,7 +1,7 @@
 gp-saml-gui
 ===========
 
-[![Test Workflow Status](https://github.com/dlenski/gp-saml-gui/workflows/test/badge.svg)](https://github.com/dlenski/gp-saml-gui/actions?query=workflow%3Atest)
+[![Test Workflow Status](https://github.com/dlenski/gp-saml-gui/workflows/build/badge.svg)](https://github.com/dlenski/gp-saml-gui/actions?query=workflow%3Abuild)
 
 Table of Contents
 =================
@@ -86,7 +86,8 @@ arguments, such as `--clientos=Windows` (because many GlobalProtect
 servers don't require SAML login, but apparently omit it in their configuration
 for OSes other than Windows).
 
-This script will pop up a [GTK WebKit2 WebView](https://webkitgtk.org/) window.
+This script will pop up a [GTK WebKit2 WebView](https://webkitgtk.org/) window
+alongside your terminal window (see this [screenshot](screenshot.png)).
 After you succesfully complete the SAML login via web forms, the script will output
 `HOST`, `USER`, `COOKIE`, and `OS` variables in a form that can be used by
 [OpenConnect](http://www.infradead.org/openconnect/juniper.html)
