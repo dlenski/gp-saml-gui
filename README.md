@@ -16,7 +16,7 @@ Table of Contents
 Introduction
 ============
 
-This is a helper script to allow you to interactively login to a GlobalProtect VPN
+This is a helper script to allow you to interactively login to a GlobalProtect or AnyConnect VPN
 that uses [SAML](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)
 authentication, so that you can subsequently connect with [OpenConnect](https://www.infradead.org/openconnect).
 (The GlobalProtect protocol is supported in OpenConnect v8.0 or newer; v8.06+ is recommended.)
@@ -81,6 +81,9 @@ gp-saml-gui: error: the following arguments are required: server, openconnect_ex
 How to use
 ==========
 
+GlobalProtect
+-------------
+
 Specify the GlobalProtect server URL (portal or gateway) and optional
 arguments, such as `--clientos=Windows` (because many GlobalProtect
 servers don't require SAML login, but apparently omit it in their configuration
@@ -115,6 +118,26 @@ win
 
 $ echo "$COOKIE" | openconnect --protocol=gp -u "$USER" --os="$OS" --passwd-on-stdin "$HOST"
 ```
+
+Cisco AnyConnect
+----------------
+
+[Cisco AnyConnect](https://www.infradead.org/openconnect/anyconnect.html)
+returns the SAML authentication in the `webvpn` cookie,
+which is extracted from the SAML response when available.
+
+Invoke as following, e.g as part of a bash script
+
+```bash
+SAML_COOKIE=$(gp_saml_gui --no-cookies --uri vpn.company.com/saml | perl -ne "/^COOKIE='?(.+)'?$/ && print \$1;")
+openconnect --cookie-on-stdin $LOGIN_URL_SAML <<< "$SAML_COOKIE"
+```
+
+You can also automatically invoke OpenConnect as described in the next section.
+
+
+OpenConnect Invocation
+----------------------
 
 If you specify either the `-P`/`--pkexec-openconnect` or `-S`/`--sudo-openconnect` options, the script
 will automatically invoke OpenConnect as described, using either [`pkexec` from Polkit](https://www.freedesktop.org/software/polkit/docs/0.106/polkit.8.html)

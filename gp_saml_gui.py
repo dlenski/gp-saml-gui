@@ -158,7 +158,7 @@ def parse_args(args = None):
     default_clientos = pf2clientos.get(platform, 'Windows')
 
     p = argparse.ArgumentParser()
-    p.add_argument('server', help='GlobalProtect server (portal or gateway)')
+    p.add_argument('server', help='GlobalProtect or AnyConnect server (portal or gateway)')
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-C', '--cookies', default='~/.gp-saml-gui-cookies',
