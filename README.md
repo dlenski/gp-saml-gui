@@ -129,7 +129,8 @@ which is extracted from the SAML response when available.
 Invoke as following, e.g as part of a bash script
 
 ```bash
-SAML_COOKIE=$(gp_saml_gui --no-cookies --uri vpn.company.com/saml | perl -ne "/^COOKIE='?(.+)'?$/ && print \$1;")
+LOGIN_URL_SAML=vpn.company.com/saml
+SAML_COOKIE=$(gp_saml_gui --no-cookies --uri $LOGIN_URL_SAML | perl -ne "/^COOKIE='?(.+)'?$/ && print \$1;")
 openconnect --cookie-on-stdin $LOGIN_URL_SAML <<< "$SAML_COOKIE"
 ```
 
