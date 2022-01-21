@@ -48,9 +48,8 @@ class SAMLLoginView:
         if not verify:
             self.ctx.set_tls_errors_policy(WebKit2.TLSErrorsPolicy.IGNORE)
         self.cookies = self.ctx.get_cookie_manager()
-        self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
         if cookies:
-            # Persistent cookie storage requested
+            self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
             self.cookies.set_persistent_storage(cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
 
@@ -162,9 +161,9 @@ def parse_args(args = None):
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-C', '--cookies', default='~/.gp-saml-gui-cookies',
-                   help='Store cookies in this file (instead of default %(default)s)')
+                   help='Use and store cookies in this file (instead of default %(default)s)')
     x.add_argument('-K', '--no-cookies', dest='cookies', action='store_const', const=None,
-                   help="Don't store cookies at all")
+                   help="Don't use or store cookies at all")
     x = p.add_mutually_exclusive_group()
     x.add_argument('-g','--gateway', dest='interface', action='store_const', const='gateway', default='portal',
                    help='SAML auth to gateway')
