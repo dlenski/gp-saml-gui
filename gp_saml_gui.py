@@ -204,6 +204,11 @@ def parse_args(args = None):
 
     return p, args
 
+def create_insecure_renego_ssl_context():
+    ctx = ssl.create_default_context()
+    ctx.options |= 4
+    return ctx
+
 def main(args = None):
     p, args = parse_args(args)
 
@@ -213,6 +218,8 @@ def main(args = None):
 
     if2prelogin = {'portal':'global-protect/prelogin.esp','gateway':'ssl-vpn/prelogin.esp'}
     if2auth = {'portal':'global-protect/getconfig.esp','gateway':'ssl-vpn/login.esp'}
+
+    ssl._create_default_https_context = create_insecure_renego_ssl_context()
 
     # query prelogin.esp and parse SAML bits
     if args.uri:
