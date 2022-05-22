@@ -18,6 +18,7 @@ if gi is None:
 
 import argparse
 import pprint
+import urllib3
 import urllib
 import requests
 import xml.etree.ElementTree as ET
@@ -134,6 +135,35 @@ class SAMLLoginView:
             self.success = True
             Gtk.main_quit()
 
+class TLSAdapter(requests.adapters.HTTPAdapter):
+    '''Adapt to older TLS stacks that would raise errors otherwise.
+
+    We try to work around different issues:
+    * Enable weak ciphers such as 3DES or RC4, that have been disabled by default
+      in OpenSSL 3.0 or recent Linux distributions.
+    * Enable weak Diffie-Hellman key exchange sizes.
+    * Enable unsafe legacy renegotiation for servers without RFC 5746 support.
+
+    See Also
+    --------
+    https://github.com/psf/requests/issues/4775#issuecomment-478198879
+
+    Notes
+    -----
+    Python is missing an ssl.OP_LEGACY_SERVER_CONNECT constant.
+    We have extracted the relevant value from <openssl/ssl.h>.
+    
+    '''
+    def init_poolmanager(self, connections, maxsize, block=False):
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
+        ssl_context.options |= 1<<2  # OP_LEGACY_SERVER_CONNECT
+        self.poolmanager = urllib3.PoolManager(
+                num_pools=connections,
+                maxsize=maxsize,
+                block=block,
+                ssl_context=ssl_context)
+
 def parse_args(args = None):
     pf2clientos = dict(linux='Linux', darwin='Mac', win32='Windows', cygwin='Windows')
     clientos2ocos = dict(Linux='linux-64', Mac='mac-intel', Windows='win')
@@ -167,6 +197,8 @@ def parse_args(args = None):
     g.add_argument('--clientos', choices=set(pf2clientos.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
     p.add_argument('-f','--field', dest='extra', action='append', default=[],
                    help='Extra form field(s) to pass to include in the login query string (e.g. "-f magic-cookie-value=deadbeef01234567")')
+    p.add_argument('--allow-insecure-crypto', dest='insecure', action='store_true',
+                   help='Allow use of insecure renegotiation or ancient 3DES and RC4 ciphers')
     p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
     args = p.parse_args(args)
 
@@ -191,6 +223,8 @@ def main(args = None):
     p, args = parse_args(args)
 
     s = requests.Session()
+    if args.insecure:
+        s.mount('https://', TLSAdapter())
     s.headers['User-Agent'] = 'PAN GlobalProtect'
     s.cert = args.cert
 
@@ -218,7 +252,7 @@ def main(args = None):
             if isinstance(rootex, ssl.CertificateError):
                 p.error("SSL certificate error (try --no-verify to ignore): %s" % rootex)
             elif isinstance(rootex, ssl.SSLError):
-                p.error("SSL error: %s" % rootex)
+                p.error("SSL error (try --allow-insecure-crypto to ignore): %s" % rootex)
             else:
                 raise
         xml = ET.fromstring(res.content)
@@ -288,6 +322,9 @@ def main(args = None):
         "--passwd-on-stdin",
         server
     ] + args.openconnect_extra
+
+    if args.insecure:
+        openconnect_args.insert(1, "--allow-insecure-crypto")
 
     openconnect_command = '''    echo {} |\n        sudo openconnect {}'''.format(
         quote(cv), " ".join(map(quote, openconnect_args)))
