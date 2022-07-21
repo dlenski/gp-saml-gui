@@ -53,10 +53,11 @@ class SAMLLoginView:
             self.cookies.set_persistent_storage(cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
 
-        if user_agent:
-            settings = self.wview.get_settings()
-            settings.set_user_agent(user_agent)
-            self.wview.set_settings(settings)
+        if user_agent is None:
+            user_agent = 'PAN GlobalProtect'
+        settings = self.wview.get_settings()
+        settings.set_user_agent(user_agent)
+        self.wview.set_settings(settings)
 
         window.resize(500, 500)
         window.add(self.wview)
@@ -157,7 +158,7 @@ class TLSAdapter(requests.adapters.HTTPAdapter):
     -----
     Python is missing an ssl.OP_LEGACY_SERVER_CONNECT constant.
     We have extracted the relevant value from <openssl/ssl.h>.
-    
+
     '''
     def init_poolmanager(self, connections, maxsize, block=False):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -204,7 +205,8 @@ def parse_args(args = None):
                    help='Extra form field(s) to pass to include in the login query string (e.g. "-f magic-cookie-value=deadbeef01234567")')
     p.add_argument('--allow-insecure-crypto', dest='insecure', action='store_true',
                    help='Allow use of insecure renegotiation or ancient 3DES and RC4 ciphers')
-    p.add_argument('--user-agent', help='Custom User Agent used for the SAML interactive login')
+    p.add_argument('--user-agent', '--useragent', default='PAN GlobalProtect',
+                   help='Use the provided string as the HTTP User-Agent header (default is %(default)r, as used by OpenConnect)')
     p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
     args = p.parse_args(args)
 
@@ -231,7 +233,7 @@ def main(args = None):
     s = requests.Session()
     if args.insecure:
         s.mount('https://', TLSAdapter())
-    s.headers['User-Agent'] = 'PAN GlobalProtect'
+    s.headers['User-Agent'] = 'PAN GlobalProtect' if args.user_agent is None else args.user_agent
     s.cert = args.cert
 
     if2prelogin = {'portal':'global-protect/prelogin.esp','gateway':'ssl-vpn/prelogin.esp'}
@@ -331,6 +333,8 @@ def main(args = None):
 
     if args.insecure:
         openconnect_args.insert(1, "--allow-insecure-crypto")
+    if args.user_agent:
+        openconnect_args.insert(1, "--useragent="+args.user_agent)
 
     openconnect_command = '''    echo {} |\n        sudo openconnect {}'''.format(
         quote(cv), " ".join(map(quote, openconnect_args)))
