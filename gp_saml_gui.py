@@ -335,6 +335,11 @@ def main(args = None):
         openconnect_args.insert(1, "--allow-insecure-crypto")
     if args.user_agent:
         openconnect_args.insert(1, "--useragent="+args.user_agent)
+    if args.cert:
+        cert, key = args.cert
+        if key:
+            openconnect_args.insert(1, "--sslkey="+key)
+        openconnect_args.insert(1, "--certificate="+cert)
 
     openconnect_command = '''    echo {} |\n        sudo openconnect {}'''.format(
         quote(cv), " ".join(map(quote, openconnect_args)))
