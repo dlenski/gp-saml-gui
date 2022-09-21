@@ -40,32 +40,80 @@ Installation
 First, non-Python Dependencies
 ------------------------------
 
-gp-saml-gui uses GTK, which requires Python 3 bindings.
+gp-saml-gui uses either GTK WebKit or Selenium, which both require Python 3 bindings.
 
-On Debian / Ubuntu, these are packaged as `python3-gi`, `gir1.2-gtk-3.0`, and
+- GTK WebKit
+
+  The default WebView implementation is using GTK WebKit.
+
+  On Debian / Ubuntu, these are packaged as `python3-gi`, `gir1.2-gtk-3.0`, and
 `gir1.2-webkit2-4.1` (or `gir1.2-webkit2-4.0` for older distributions).
 
-```
-$ sudo apt install python3-gi gir1.2-gtk-3.0 'gir1.2-webkit2-4.*'
-```
+  ```
+  $ sudo apt install python3-gi gir1.2-gtk-3.0 'gir1.2-webkit2-4.*'
+  ```
 
 (Note that the older version, WebKit2GTK 4.0, is [no longer
 maintained](https://wiki.ubuntu.com/SecurityTeam/FAQ#WebKitGTK); more
 details in [#92](https://github.com/dlenski/gp-saml-gui/pull/92).)
 
-On Fedora (and possibly RHEL/CentOS) the matching libraries are packaged in
-`python3-gobject`, `gtk3-devel`, and `webkit2gtk3-devel`:
+  On Fedora the matching libraries are packaged in
+  `python3-gobject`, `gtk3-devel`, and `webkit2gtk3-devel`:
 
-```
-$ sudo dnf install python3-gobject gtk3-devel webkit2gtk3-devel
-```
+  ```
+  $ sudo dnf install python3-gobject gtk3-devel webkit2gtk3-devel
+  ```
 
-On Arch Linux, the libraries are packaged in `gtk3`, `gobject-introspection`
-and `webkit2gtk`:
+  On CentOS the libraries are packaged in `python36-gobject-base`, `python36-gobject`,
+`python36-requests` and `webkitgtk3`
 
-```
-$ sudo pacman -S gtk3 gobject-introspection webkit2gtk
-```
+  ```
+  $ sudo yum install python36-gobject-base python36-gobject python36-requests webkitgtk3
+  ```
+
+  On Arch Linux, the libraries are packaged in `gtk3`, `gobject-introspection`
+  and `webkit2gtk`:
+
+  ```
+  $ sudo pacman -S gtk3 gobject-introspection webkit2gtk
+  ```
+
+- Selenium
+
+  If you want to use [Selenium](https://www.selenium.dev/) instead of
+  GTK WebKit, you need to install
+  [Selenium for Python](https://pypi.org/project/selenium/) and
+  [beautifulsoup4](https://pypi.org/project/beautifulsoup4/).
+
+  Use
+
+  ```
+  $ pip3 install selenium beautifulsoup4
+  ```
+
+  or
+
+  ```
+  $ dnf install python3-selenium python3-beautifulsoup4
+  ```
+
+  Additionally you need to install and the corresponding
+  [Chrome driver](https://chromedriver.chromium.org/downloads).  
+  Please unpack / install / symlink `./chromedriver` to the PATH.
+
+  On some systems, chromedriver can be installed by the package manager
+
+  ```
+  $ dnf install chromedriver
+  ```
+
+  Alternatively, you can download it Example (for Chrome 106 on 64bit Linux):
+
+  ```
+  $ wget https://chromedriver.storage.googleapis.com/106.0.5249.21/chromedriver_linux64.zip
+  $ unzip chromedriver_linux64.zip
+  # put / symlink it to the PATH
+  ```
 
 Second, gp-saml-gui itself
 --------------------------
@@ -79,6 +127,7 @@ $ gp-saml-gui
 usage: gp-saml-gui [-h] [--no-verify] [-C COOKIES | -K] [-p | -g] [-c CERT]
                    [--key KEY] [-v | -q] [-x | -P | -S] [-u]
                    [--clientos {Windows,Linux,Mac}] [-f EXTRA]
+                   [-W {WebKit,Selenium}]
                    server [openconnect_extra [openconnect_extra ...]]
 gp-saml-gui: error: the following arguments are required: server, openconnect_extra
 ```
