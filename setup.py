@@ -6,9 +6,6 @@ try:
 except ImportError:
     from distutils.core import setup
 
-if sys.version_info <= (3, 5):
-    sys.exit("Python 3.5+ is required.")
-
 ########################################
 
 setup(
@@ -20,6 +17,7 @@ setup(
     author="Daniel Lenski",
     author_email="dlenski@gmail.com",
     license='GPL v3 or later',
+    python_requires=">=3.5",
     install_requires=list(open("requirements.txt")),
     url="https://github.com/dlenski/gp-saml-gui",
     py_modules = ['gp_saml_gui'],
