@@ -1,13 +1,7 @@
 #!/usr/bin/python3
 
-from __future__ import print_function
-from sys import stderr, version_info, platform
-if (version_info >= (3, 0)):
-    from urllib.parse import urlparse, urlencode
-    raw_input = input
-else:
-    from urlparse import urlparse
-    from urllib import urlencode
+from sys import stderr, platform
+from urllib.parse import urlparse, urlencode
 import requests
 import argparse
 import getpass
@@ -68,7 +62,7 @@ if prelogin:
 else:
     # same request params work for /global-protect/getconfig.esp as for /ssl-vpn/login.esp
     if args.user == None:
-        args.user = raw_input('Username: ')
+        args.user = input('Username: ')
     if args.password == None:
         args.password = getpass.getpass('Password: ')
     data=dict(user=args.user, passwd=args.password,
