@@ -15,7 +15,7 @@ setup(
     name="gp-saml-gui",
     version='0.1',
     description="Interactively authenticate to GlobalProtect VPNs that require SAML",
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type='text/markdown',
     author="Daniel Lenski",
     author_email="dlenski@gmail.com",
