@@ -123,7 +123,7 @@ appending these. For example:
 
 ```sh
 $ gp-saml-gui -P --gateway --clientos=Windows vpn.company.com -- --csd-wrapper=hip-report.sh
-…
+...
 Launching OpenConnect with pkexec, equivalent to:
     echo blahblahblahlongrandomcookievalue |
         sudo openconnect --protocol=gp --user=foo12345@corp.company.com --os=win --usergroup=gateway:prelogin-cookie --passwd-on-stdin vpn.company.com
