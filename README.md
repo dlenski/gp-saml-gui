@@ -11,6 +11,7 @@ Table of Contents
     * [First, non-Python Dependencies](#first-non-python-dependencies)
     * [Second, gp-saml-gui itself](#second-gp-saml-gui-itself)
   * [How to use](#how-to-use)
+    * [Extra arguments to OpenConnect](#extra-arguments-to-openconnect)
   * [License](#license)
 
 Introduction
@@ -118,7 +119,11 @@ $ echo "$COOKIE" | openconnect --protocol=gp -u "$USER" --os="$OS" --passwd-on-s
 
 If you specify either the `-P`/`--pkexec-openconnect` or `-S`/`--sudo-openconnect` options, the script
 will automatically invoke OpenConnect as described, using either [`pkexec` from Polkit](https://www.freedesktop.org/software/polkit/docs/0.106/polkit.8.html)
-or [`sudo`](https://www.sudo.ws/), as specified. Extra arguments needed for OpenConnect can be specified by adding ` -- ` to the command line, and then
+or [`sudo`](https://www.sudo.ws/), as specified.
+
+# Extra Arguments to OpenConnect
+
+Extra arguments needed for OpenConnect can be specified by adding ` -- ` to the command line, and then
 appending these. For example:
 
 ```sh
