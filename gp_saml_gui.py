@@ -42,6 +42,7 @@ class SAMLLoginView:
         self.closed = False
         self.success = False
         self.saml_result = {}
+        self.webvpn = None
         self.verbose = verbose
 
         self.ctx = WebKit2.WebContext.get_default()
@@ -112,6 +113,8 @@ class SAMLLoginView:
         uri = mr.get_uri()
         rs = mr.get_response()
         h = rs.get_http_headers() if rs else None
+        # Request cookies from this page
+        self.cookies.get_cookies(uri, None, self.cookie_callback, uri)
         if self.verbose:
             print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
         if not h:
@@ -133,11 +136,25 @@ class SAMLLoginView:
         self.saml_result.update(fd, server=urlparse(uri).netloc)
         GLib.timeout_add(1000, self.check_done)
 
+    def cookie_callback(self, cookiemanager, result, uri):
+        # Invoked from get_saml_headers
+        # Cookes are now available and can be fetched
+        self.current_cookies = {}
+        for c in cookiemanager.get_cookies_finish(result):
+            if c.get_name() == "webvpn":
+                self.webvpn = c.get_value()
+                break
+
     def check_done(self):
         d = self.saml_result
         if 'saml-username' in d and ('prelogin-cookie' in d or 'portal-userauthcookie' in d):
             if self.verbose:
                 print("[SAML   ] Got all required SAML headers, done.", file=stderr)
+            self.success = True
+            Gtk.main_quit()
+        if self.webvpn:
+            if self.verbose:
+                print(f"[SAML   ] Got webvpn cookie: {self.webvpn}", file=stderr)
             self.success = True
             Gtk.main_quit()
 
@@ -176,7 +193,7 @@ def parse_args(args = None):
     default_clientos = pf2clientos.get(platform, 'Windows')
 
     p = argparse.ArgumentParser()
-    p.add_argument('server', help='GlobalProtect server (portal or gateway)')
+    p.add_argument('server', help='GlobalProtect or AnyConnect server (portal or gateway)')
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-C', '--cookies', default='~/.gp-saml-gui-cookies',
@@ -193,7 +210,7 @@ def parse_args(args = None):
     g.add_argument('--key', help='PEM file containing client private key (if not included in same file as certificate)')
     g = p.add_argument_group('Debugging and advanced options')
     x = p.add_mutually_exclusive_group()
-    x.add_argument('-v','--verbose', default=1, action='count', help='Increase verbosity of explanatory output to stderr')
+    x.add_argument('-v','--verbose', default=0, action='count', help='Increase verbosity of explanatory output to stderr')
     x.add_argument('-q','--quiet', dest='verbose', action='store_const', const=0, help='Reduce verbosity to a minimum')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
@@ -311,25 +328,39 @@ def main(args = None):
         p.error('''Login window closed without producing SAML cookies.''')
 
     # extract response and convert to OpenConnect command-line
-    un = slv.saml_result.get('saml-username')
-    server = slv.saml_result.get('server', args.server)
+    if slv.webvpn:
+        # When a Anyconnect webvpn cookie is available, use this to connect.
+        # No other information besides the url is needed by openconnect
+        cv = slv.webvpn
+        server = args.server
+        un = cn = ifh = None
+        openconnect_args = [
+            "--protocol=anyconnect",
+            "--cookie-on-stdin",
+            server
+        ]
+    else: # not slv.webvpn, more information is needed
+        un = slv.saml_result.get('saml-username')
+        server = slv.saml_result.get('server', args.server)
 
-    for cn, ifh in (('prelogin-cookie','gateway'), ('portal-userauthcookie','portal')):
-        cv = slv.saml_result.get(cn)
-        if cv:
-            break
-    else:
-        cn = ifh = None
-        p.error("Didn't get an expected cookie. Something went wrong.")
+        for cn, ifh in (('prelogin-cookie','gateway'), ('portal-userauthcookie','portal')):
+            cv = slv.saml_result.get(cn)
+            if cv:
+                break
+            else:
+                cn = ifh = None
+                p.error("Didn't get an expected cookie. Something went wrong.")
 
-    openconnect_args = [
-        "--protocol=gp",
-        "--user="+un,
-        "--os="+args.ocos,
-        "--usergroup="+args.interface+":"+cn,
-        "--passwd-on-stdin",
-        server
-    ] + args.openconnect_extra
+        openconnect_args = [
+            "--protocol=gp",
+            "--user="+un,
+            "--os="+args.ocos,
+            "--usergroup="+args.interface+":"+cn,
+            "--passwd-on-stdin",
+            server
+        ]
+    # end if slv.webvpn:
+    openconnect_args += args.openconnect_extra
 
     if args.insecure:
         openconnect_args.insert(1, "--allow-insecure-crypto")
@@ -357,9 +388,10 @@ def main(args = None):
         print('''\nSAML response converted to OpenConnect command line invocation:\n''', file=stderr)
         print(openconnect_command, file=stderr)
 
-        print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
-        print('''    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
-            quote(un), quote(args.clientos), quote(server), quote(if2auth[args.interface]), quote(cn), quote(cv)), file=stderr)
+        if not slv.webvpn:
+            print('''\nSAML response converted to test-globalprotect-login.py invocation:\n''', file=stderr)
+            print('''    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n         https://{}/{} {}={}\n'''.format(
+                quote(un), quote(args.clientos), quote(server), quote(if2auth[args.interface]), quote(cn), quote(cv)), file=stderr)
 
     if args.exec:
         print('''Launching OpenConnect with {}, equivalent to:\n{}'''.format(args.exec, openconnect_command))
