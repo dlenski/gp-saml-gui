@@ -106,7 +106,7 @@ Got SAML relevant headers, done: {'prelogin-cookie': 'blahblahblah', 'saml-usern
 SAML response converted to OpenConnect command line invocation:
 
     echo 'blahblahblah' |
-        openconnect --protocol=gp --user='foo12345@corp.company.com' --os=win --usergroup=prelogin-cookie:gateway --passwd-on-stdin vpn.company.com
+        openconnect --protocol=gp --user='foo12345@corp.company.com' --os=win --usergroup=gateway:prelogin-cookie --passwd-on-stdin vpn.company.com
 
 $ echo $HOST; echo $USER; echo $COOKIE; echo $OS
 https://vpn.company.com/gateway:prelogin-cookie
