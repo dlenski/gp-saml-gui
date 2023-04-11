@@ -6,8 +6,8 @@ try:
 except ImportError:
     from distutils.core import setup
 
-if not sys.version_info[0] == 3:
-    sys.exit("Python 2.x is not supported; Python 3.x is required.")
+if sys.version_info <= (3, 5):
+    sys.exit("Python 3.5+ is required.")
 
 ########################################
 

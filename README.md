@@ -1,7 +1,7 @@
 gp-saml-gui
 ===========
 
-[![Test Workflow Status](https://github.com/dlenski/gp-saml-gui/workflows/build/badge.svg)](https://github.com/dlenski/gp-saml-gui/actions?query=workflow%3Abuild)
+[![Test Workflow Status](https://github.com/dlenski/gp-saml-gui/workflows/build/badge.svg)](https://github.com/dlenski/gp-saml-gui/actions/workflows/test.yml)
 
 Table of Contents
 =================
