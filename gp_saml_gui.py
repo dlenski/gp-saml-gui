@@ -322,11 +322,12 @@ def main(args = None):
         cn = ifh = None
         p.error("Didn't get an expected cookie. Something went wrong.")
 
+    urlpath = args.interface + ":" + cn
     openconnect_args = [
         "--protocol=gp",
         "--user="+un,
         "--os="+args.ocos,
-        "--usergroup="+args.interface+":"+cn,
+        "--usergroup="+urlpath,
         "--passwd-on-stdin",
         server
     ] + args.openconnect_extra
@@ -378,7 +379,7 @@ def main(args = None):
 
     else:
         varvals = {
-            'HOST': quote('https://%s/%s:%s' % (server, if2auth[args.interface], cn)),
+            'HOST': quote('https://%s/%s' % (server, urlpath)),
             'USER': quote(un), 'COOKIE': quote(cv), 'OS': quote(args.ocos),
         }
         print('\n'.join('%s=%s' % pair for pair in varvals.items()))
