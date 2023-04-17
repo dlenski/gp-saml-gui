@@ -119,7 +119,7 @@ class SAMLLoginView:
 
         # convert to normal dict
         d = {}
-        h.foreach(lambda k, v: setitem(d, k, v))
+        h.foreach(lambda k, v: setitem(d, k.lower(), v))
         # filter to interesting headers
         fd = {name:v for name, v in d.items() if name.startswith('saml-') or name in ('prelogin-cookie', 'portal-userauthcookie')}
         if fd and self.verbose:
