@@ -17,9 +17,7 @@ if gi is None:
     raise ImportError("Either gi (PyGObject) or pgi module is required.")
 
 import argparse
-import pprint
 import urllib3
-import urllib
 import requests
 import xml.etree.ElementTree as ET
 import ssl
@@ -31,6 +29,20 @@ from shlex import quote
 from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
 from urllib.parse import urlparse, urlencode
+from html.parser import HTMLParser
+
+
+class CommentHtmlParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.comments = []
+
+    def handle_comment(self, data: str) -> None:
+        self.comments.append(data)
+
+
+COOKIE_FIELDS = ('prelogin-cookie', 'portal-userauthcookie')
+
 
 class SAMLLoginView:
     def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True, user_agent=None):
@@ -64,7 +76,7 @@ class SAMLLoginView:
         window.show_all()
         window.set_title("SAML Login")
         window.connect('delete-event', self.close)
-        self.wview.connect('load-changed', self.get_saml_headers)
+        self.wview.connect('load-changed', self.on_load_changed)
         self.wview.connect('resource-load-started', self.log_resources)
 
         if html:
@@ -104,7 +116,7 @@ class SAMLLoginView:
         if charset or content_type.startswith('text/'):
             print(data.decode(charset or 'utf-8'), file=stderr)
 
-    def get_saml_headers(self, webview, event):
+    def on_load_changed(self, webview, event):
         if event != WebKit2.LoadEvent.FINISHED:
             return
 
@@ -112,26 +124,64 @@ class SAMLLoginView:
         uri = mr.get_uri()
         rs = mr.get_response()
         h = rs.get_http_headers() if rs else None
+        ct = h.get_content_type()
+
         if self.verbose:
             print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
-        if not h:
-            return
 
         # convert to normal dict
         d = {}
         h.foreach(lambda k, v: setitem(d, k.lower(), v))
         # filter to interesting headers
-        fd = {name:v for name, v in d.items() if name.startswith('saml-') or name in ('prelogin-cookie', 'portal-userauthcookie')}
-        if fd and self.verbose:
-            print("[SAML   ] Got SAML result headers: %r" % fd, file=stderr)
-            if self.verbose > 1:
-                # display everything we found
-                ct = h.get_content_type()
-                mr.get_data(None, self.log_resource_text, ct[0], ct.params.get('charset'), d)
+        fd = {name: v for name, v in d.items() if name.startswith('saml-') or name in COOKIE_FIELDS}
 
-        # check if we're done
-        self.saml_result.update(fd, server=urlparse(uri).netloc)
-        GLib.timeout_add(1000, self.check_done)
+        if fd:
+            if self.verbose:
+                print("[SAML   ] Got SAML result headers: %r" % fd, file=stderr)
+                if self.verbose > 1:
+                    # display everything we found
+                    mr.get_data(None, self.log_resource_text, ct[0], ct.params.get('charset'), d)
+            self.saml_result.update(fd, server=urlparse(uri).netloc)
+            self.check_done()
+
+        if not self.success:
+            if self.verbose > 1:
+                print("[SAML   ] No headers in response, searching body for xml comments", file=stderr)
+            # asynchronous call to fetch body content, continue processing in callback:
+            mr.get_data(None, self.response_callback, ct)
+
+    def response_callback(self, resource, result, ct):
+        data = resource.get_data_finish(result)
+        content = data.decode(ct.params.get("charset") or "utf-8")
+
+        html_parser = CommentHtmlParser()
+        html_parser.feed(content)
+
+        fd = {}
+        for comment in html_parser.comments:
+            if self.verbose > 1:
+                print("[SAML   ] Found comment in response body: '%s'" % comment, file=stderr)
+            try:
+                # xml parser requires valid xml with a single root tag, but our expected content
+                # is just a list of data tags, so we need to improvise
+                xmlroot = ET.fromstring("<fakexmlroot>%s</fakexmlroot>" % comment)
+                # search for any valid first level xml tags (inside our fake root) that could contain SAML data
+                for elem in xmlroot:
+                    if elem.tag.startswith("saml-") or elem.tag in COOKIE_FIELDS:
+                        fd[elem.tag] = elem.text
+            except ET.ParseError:
+                pass  # silently ignore any comments that don't contain valid xml
+
+        if self.verbose > 1:
+            print("[SAML   ] Finished parsing response body for %s" % resource.get_uri(), file=stderr)
+        if fd:
+            if self.verbose:
+                print("[SAML   ] Got SAML result tags: %s" % fd, file=stderr)
+            self.saml_result.update(fd, server=urlparse(resource.get_uri()).netloc)
+
+        if not self.check_done():
+            # Work around timing/race condition by retrying check_done after 1 second
+            GLib.timeout_add(1000, self.check_done)
 
     def check_done(self):
         d = self.saml_result
@@ -140,6 +190,8 @@ class SAMLLoginView:
                 print("[SAML   ] Got all required SAML headers, done.", file=stderr)
             self.success = True
             Gtk.main_quit()
+            return True
+
 
 class TLSAdapter(requests.adapters.HTTPAdapter):
     '''Adapt to older TLS stacks that would raise errors otherwise.
@@ -363,7 +415,7 @@ def main(args = None):
             quote(un), quote(args.clientos), quote(server), quote(if2auth[args.interface]), quote(cn), quote(cv)), file=stderr)
 
     if args.exec:
-        print('''Launching OpenConnect with {}, equivalent to:\n{}'''.format(args.exec, openconnect_command))
+        print('''Launching OpenConnect with {}, equivalent to:\n{}'''.format(args.exec, openconnect_command), file=stderr)
         with tempfile.TemporaryFile('w+') as tf:
             tf.write(cv)
             tf.flush()
