@@ -178,7 +178,10 @@ class SAMLLoginView:
             if self.verbose:
                 print("[SAML   ] Got SAML result tags: %s" % fd, file=stderr)
             self.saml_result.update(fd, server=urlparse(resource.get_uri()).netloc)
-        self.check_done()
+
+        if not self.check_done():
+            # Work around timing/race condition by retrying check_done after 1 second
+            GLib.timeout_add(1000, self.check_done)
 
     def check_done(self):
         d = self.saml_result
@@ -187,6 +190,7 @@ class SAMLLoginView:
                 print("[SAML   ] Got all required SAML headers, done.", file=stderr)
             self.success = True
             Gtk.main_quit()
+            return True
 
 
 class TLSAdapter(requests.adapters.HTTPAdapter):
