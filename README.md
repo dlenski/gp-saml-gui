@@ -46,7 +46,7 @@ On Debian / Ubuntu, these are packaged as `python3-gi`, `gir1.2-gtk-3.0`, and
 `gir1.2-webkit2-4.0`:
 
 ```
-$ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0
+$ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 libgirepository1.0-dev libcairo2-dev
 ```
 
 On Fedora (and possibly RHEL/CentOS) the matching libraries are packaged in
