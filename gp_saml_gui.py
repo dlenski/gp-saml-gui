@@ -22,6 +22,8 @@ import requests
 import xml.etree.ElementTree as ET
 import ssl
 import tempfile
+import configparser
+import itertools
 
 from operator import setitem
 from os import path, dup2, execvp
@@ -45,7 +47,7 @@ COOKIE_FIELDS = ('prelogin-cookie', 'portal-userauthcookie')
 
 
 class SAMLLoginView:
-    def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True, user_agent=None):
+    def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True, user_agent=None, credentials=None):
         Gtk.init(None)
         window = Gtk.Window()
 
@@ -71,6 +73,19 @@ class SAMLLoginView:
         settings.set_user_agent(user_agent)
         self.wview.set_settings(settings)
 
+        if credentials:
+            self.credentials = {}
+            config = configparser.ConfigParser()
+            try:
+                with open(credentials) as fp:
+                    config.read_file(itertools.chain(["[gp-saml-gui]\n"], fp), source=credentials)
+            except:
+                print("Error opening '%s'" % credentials)
+                config = None
+            if config:
+                for x in ['username', 'password']:
+                    self.credentials[x] = config['gp-saml-gui'][x]
+
         window.resize(500, 500)
         window.add(self.wview)
         window.show_all()
@@ -83,7 +98,7 @@ class SAMLLoginView:
             self.wview.load_html(html, uri)
         else:
             self.wview.load_uri(uri)
-
+        
     def close(self, window, event):
         self.closed = True
         Gtk.main_quit()
@@ -116,6 +131,10 @@ class SAMLLoginView:
         if charset or content_type.startswith('text/'):
             print(data.decode(charset or 'utf-8'), file=stderr)
 
+    def setvalue_DOM_element(self, selector, value):
+        if self.wview:
+            self.wview.evaluate_javascript("document.getElementById('" + selector + "').value='" + value + "';", -1, None, None, None, None, None)
+
     def on_load_changed(self, webview, event):
         if event != WebKit2.LoadEvent.FINISHED:
             return
@@ -129,6 +148,10 @@ class SAMLLoginView:
         if self.verbose:
             print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
 
+        # Set credentials
+        for x in self.credentials:
+            self.setvalue_DOM_element(x, self.credentials[x])
+        
         # convert to normal dict
         d = {}
         h.foreach(lambda k, v: setitem(d, k.lower(), v))
@@ -253,6 +276,8 @@ def parse_args(args = None):
     x.add_argument('-S','--sudo-openconnect', action='store_const', dest='exec', const='sudo', help='Use sudo to exec openconnect')
     g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
     g.add_argument('--clientos', choices=set(pf2clientos.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
+    p.add_argument('-l','--login', default='~/.gp-saml-gui-credentials',
+                   help='Read login credentials in this file (instead of default %(default)s)')
     p.add_argument('-f','--field', dest='extra', action='append', default=[],
                    help='Extra form field(s) to pass to include in the login query string (e.g. "-f magic-cookie-value=deadbeef01234567")')
     p.add_argument('--allow-insecure-crypto', dest='insecure', action='store_true',
@@ -354,7 +379,7 @@ def main(args = None):
     # spawn WebKit view to do SAML interactive login
     if args.verbose:
         print("Got SAML %s, opening browser..." % sam, file=stderr)
-    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies, verify=args.verify, user_agent=args.user_agent)
+    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies, verify=args.verify, user_agent=args.user_agent, credentials=args.login)
     Gtk.main()
     if slv.closed:
         print("Login window closed by user.", file=stderr)
