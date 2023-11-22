@@ -133,7 +133,7 @@ class SAMLLoginView:
         d = {}
         h.foreach(lambda k, v: setitem(d, k.lower(), v))
         # filter to interesting headers
-        fd = {name: v for name, v in d.items() if name.startswith('saml-') or name in COOKIE_FIELDS}
+        fd = {name.lower(): v for name, v in d.items() if name.lower().startswith('saml-') or name.lower() in COOKIE_FIELDS}
 
         if fd:
             if self.verbose:
