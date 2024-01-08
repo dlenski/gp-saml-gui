@@ -45,7 +45,8 @@ COOKIE_FIELDS = ('prelogin-cookie', 'portal-userauthcookie')
 
 
 class SAMLLoginView:
-    def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True, user_agent=None):
+    def __init__(self, uri, html, args):
+
         Gtk.init(None)
         window = Gtk.Window()
 
@@ -54,21 +55,21 @@ class SAMLLoginView:
         self.closed = False
         self.success = False
         self.saml_result = {}
-        self.verbose = verbose
+        self.verbose = args.verbose
 
         self.ctx = WebKit2.WebContext.get_default()
-        if not verify:
+        if not args.verify:
             self.ctx.set_tls_errors_policy(WebKit2.TLSErrorsPolicy.IGNORE)
         self.cookies = self.ctx.get_cookie_manager()
-        if cookies:
+        if args.cookies:
             self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
-            self.cookies.set_persistent_storage(cookies, WebKit2.CookiePersistentStorage.TEXT)
+            self.cookies.set_persistent_storage(args.cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
 
-        if user_agent is None:
-            user_agent = 'PAN GlobalProtect'
+        if args.user_agent is None:
+            args.user_agent = 'PAN GlobalProtect'
         settings = self.wview.get_settings()
-        settings.set_user_agent(user_agent)
+        settings.set_user_agent(args.user_agent)
         self.wview.set_settings(settings)
 
         window.resize(500, 500)
@@ -373,7 +374,7 @@ def main(args = None):
     # spawn WebKit view to do SAML interactive login
     if args.verbose:
         print("Got SAML %s, opening browser..." % sam, file=stderr)
-    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies, verify=args.verify, user_agent=args.user_agent)
+    slv = SAMLLoginView(uri, html, args)
     Gtk.main()
     if slv.closed:
         print("Login window closed by user.", file=stderr)
