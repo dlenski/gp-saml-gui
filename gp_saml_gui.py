@@ -66,6 +66,10 @@ class SAMLLoginView:
             self.cookies.set_persistent_storage(args.cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
 
+        if args.no_proxy:
+            data_manager = self.ctx.get_website_data_manager()
+            data_manager.set_network_proxy_settings(WebKit2.NetworkProxyMode.NO_PROXY, None)
+
         if args.user_agent is None:
             args.user_agent = 'PAN GlobalProtect'
         settings = self.wview.get_settings()
@@ -279,6 +283,7 @@ def parse_args(args = None):
                    help='Allow use of insecure renegotiation or ancient 3DES and RC4 ciphers')
     p.add_argument('--user-agent', '--useragent', default='PAN GlobalProtect',
                    help='Use the provided string as the HTTP User-Agent header (default is %(default)r, as used by OpenConnect)')
+    p.add_argument('--no-proxy', action='store_true', help='Disable system proxy settings')
     p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
     args = p.parse_args(args)
 
@@ -413,6 +418,8 @@ def main(args = None):
         if key:
             openconnect_args.insert(1, "--sslkey="+key)
         openconnect_args.insert(1, "--certificate="+cert)
+    if args.no_proxy:
+        openconnect_args.insert(1, "--no-proxy")
 
     openconnect_command = '''    echo {} |\n        sudo openconnect {}'''.format(
         quote(cv), " ".join(map(quote, openconnect_args)))
