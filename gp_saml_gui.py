@@ -123,7 +123,11 @@ class SAMLLoginView:
         mr = webview.get_main_resource()
         uri = mr.get_uri()
         rs = mr.get_response()
-        h = rs.get_http_headers() if rs else None
+        if not rs:
+            return
+        h = rs.get_http_headers()
+        if not h:
+            return
         ct = h.get_content_type()
 
         if self.verbose:
