@@ -43,10 +43,10 @@ First, non-Python Dependencies
 gp-saml-gui uses GTK, which requires Python 3 bindings.
 
 On Debian / Ubuntu, these are packaged as `python3-gi`, `gir1.2-gtk-3.0`, and
-`gir1.2-webkit2-4.0`:
+`gir1.2-webkit2-4.1`:
 
 ```
-$ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0
+$ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1
 ```
 
 On Fedora (and possibly RHEL/CentOS) the matching libraries are packaged in

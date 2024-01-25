@@ -3,13 +3,13 @@
 try:
     import gi
     gi.require_version('Gtk', '3.0')
-    gi.require_version('WebKit2', '4.0')
+    gi.require_version('WebKit2', '4.1')
     from gi.repository import Gtk, WebKit2, GLib
 except ImportError:
     try:
         import pgi as gi
         gi.require_version('Gtk', '3.0')
-        gi.require_version('WebKit2', '4.0')
+        gi.require_version('WebKit2', '4.1')
         from pgi.repository import Gtk, WebKit2, GLib
     except ImportError:
         gi = None
@@ -49,7 +49,7 @@ class SAMLLoginView:
         Gtk.init(None)
         window = Gtk.Window()
 
-        # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
+        # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.1
 
         self.closed = False
         self.success = False
