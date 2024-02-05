@@ -271,6 +271,7 @@ def parse_args(args = None):
     x.add_argument('-K', '--no-cookies', dest='cookies', action='store_const', const=None,
                    help="Don't use or store cookies at all")
     x = p.add_mutually_exclusive_group()
+    p.add_argument('-i', '--ignore-redirects', action='store_true', help='Use specified gateway hostname as server, ignoring redirects')
     x.add_argument('-g','--gateway', dest='interface', action='store_const', const='gateway', default='portal',
                    help='SAML auth to gateway')
     x.add_argument('-p','--portal', dest='interface', action='store_const', const='portal',
@@ -401,7 +402,10 @@ def main(args = None):
 
     # extract response and convert to OpenConnect command-line
     un = slv.saml_result.get('saml-username')
-    server = slv.saml_result.get('server', args.server)
+    if args.ignore_redirects:
+        server = args.server
+    else:
+        server = slv.saml_result.get('server', args.server)
 
     for cn, ifh in (('prelogin-cookie','gateway'), ('portal-userauthcookie','portal')):
         cv = slv.saml_result.get(cn)
@@ -439,9 +443,14 @@ def main(args = None):
     if args.verbose:
         # Warn about ambiguities
         if server != args.server and not args.uri:
-            print('''IMPORTANT: During the SAML auth, you were redirected from {0} to {1}. This probably '''
-                  '''means you should specify {1} as the server for final connection, but we're not 100% '''
-                  '''sure about this. You should probably try both.\n'''.format(args.server, server), file=stderr)
+            if args.ignore_redirects:
+                print('''IMPORTANT: During the SAML auth, you were redirected from {0} to {1}. This probably '''
+                      '''means you should specify {1} as the server for final connection, but we're not 100% '''
+                      '''sure about this. You should probably try both; if necessary, use the '''
+                      '''--ignore-redirects option to specify desired behavior.\n'''.format(args.server, server), file=stderr)
+            else:
+                print('''IMPORTANT: During the SAML auth, you were redirected from {0} to {1}, however the '''
+                      '''redirection was ignored because you specified --ignore-redirects.\n'''.format(args.server, server), file=stderr)
         if ifh != args.interface and not args.uri:
             print('''IMPORTANT: We started with SAML auth to the {} interface, but received a cookie '''
                   '''that's often associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
