@@ -230,6 +230,7 @@ def parse_args(args = None):
     p = argparse.ArgumentParser()
     p.add_argument('server', help='GlobalProtect server (portal or gateway)')
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
+    p.add_argument('-G', '--gateway-is-server', action='store_true', help='Use specified gateway hostname as server, ignoring redirects')
     x = p.add_mutually_exclusive_group()
     x.add_argument('-C', '--cookies', default='~/.gp-saml-gui-cookies',
                    help='Use and store cookies in this file (instead of default %(default)s)')
@@ -364,7 +365,10 @@ def main(args = None):
 
     # extract response and convert to OpenConnect command-line
     un = slv.saml_result.get('saml-username')
-    server = slv.saml_result.get('server', args.server)
+    if args.gateway_is_server:
+        server = args.server
+    else:
+        server = slv.saml_result.get('server', args.server)
 
     for cn, ifh in (('prelogin-cookie','gateway'), ('portal-userauthcookie','portal')):
         cv = slv.saml_result.get(cn)
@@ -402,7 +406,8 @@ def main(args = None):
         if server != args.server and not args.uri:
             print('''IMPORTANT: During the SAML auth, you were redirected from {0} to {1}. This probably '''
                   '''means you should specify {1} as the server for final connection, but we're not 100% '''
-                  '''sure about this. You should probably try both.\n'''.format(args.server, server), file=stderr)
+                  '''sure about this. You should probably try both; if necessary, use the '''
+                  '''--gateway-is-server option to override redirects.\n'''.format(args.server, server), file=stderr)
         if ifh != args.interface and not args.uri:
             print('''IMPORTANT: We started with SAML auth to the {} interface, but received a cookie '''
                   '''that's often associated with the {} interface. You should probably try both.\n'''.format(args.interface, ifh),
