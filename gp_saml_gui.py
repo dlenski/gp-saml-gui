@@ -45,7 +45,8 @@ COOKIE_FIELDS = ('prelogin-cookie', 'portal-userauthcookie')
 
 
 class SAMLLoginView:
-    def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True, user_agent=None):
+    def __init__(self, uri, html, args):
+
         Gtk.init(None)
         window = Gtk.Window()
 
@@ -54,21 +55,25 @@ class SAMLLoginView:
         self.closed = False
         self.success = False
         self.saml_result = {}
-        self.verbose = verbose
+        self.verbose = args.verbose
 
         self.ctx = WebKit2.WebContext.get_default()
-        if not verify:
+        if not args.verify:
             self.ctx.set_tls_errors_policy(WebKit2.TLSErrorsPolicy.IGNORE)
         self.cookies = self.ctx.get_cookie_manager()
-        if cookies:
+        if args.cookies:
             self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
-            self.cookies.set_persistent_storage(cookies, WebKit2.CookiePersistentStorage.TEXT)
+            self.cookies.set_persistent_storage(args.cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
 
-        if user_agent is None:
-            user_agent = 'PAN GlobalProtect'
+        if args.no_proxy:
+            data_manager = self.ctx.get_website_data_manager()
+            data_manager.set_network_proxy_settings(WebKit2.NetworkProxyMode.NO_PROXY, None)
+
+        if args.user_agent is None:
+            args.user_agent = 'PAN GlobalProtect'
         settings = self.wview.get_settings()
-        settings.set_user_agent(user_agent)
+        settings.set_user_agent(args.user_agent)
         self.wview.set_settings(settings)
 
         window.resize(500, 500)
@@ -123,7 +128,11 @@ class SAMLLoginView:
         mr = webview.get_main_resource()
         uri = mr.get_uri()
         rs = mr.get_response()
-        h = rs.get_http_headers() if rs else None
+        if not rs:
+            return
+        h = rs.get_http_headers()
+        if not h:
+            return
         ct = h.get_content_type()
 
         if self.verbose:
@@ -259,6 +268,7 @@ def parse_args(args = None):
                    help='Allow use of insecure renegotiation or ancient 3DES and RC4 ciphers')
     p.add_argument('--user-agent', '--useragent', default='PAN GlobalProtect',
                    help='Use the provided string as the HTTP User-Agent header (default is %(default)r, as used by OpenConnect)')
+    p.add_argument('--no-proxy', action='store_true', help='Disable system proxy settings')
     p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
     args = p.parse_args(args)
 
@@ -354,7 +364,7 @@ def main(args = None):
     # spawn WebKit view to do SAML interactive login
     if args.verbose:
         print("Got SAML %s, opening browser..." % sam, file=stderr)
-    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies, verify=args.verify, user_agent=args.user_agent)
+    slv = SAMLLoginView(uri, html, args)
     Gtk.main()
     if slv.closed:
         print("Login window closed by user.", file=stderr)
