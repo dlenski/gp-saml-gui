@@ -216,10 +216,16 @@ class TLSAdapter(requests.adapters.HTTPAdapter):
     We have extracted the relevant value from <openssl/ssl.h>.
 
     '''
+
+    def __init__(self, verify=True):
+        self.verify = verify
+        super().__init__()
+
     def init_poolmanager(self, connections, maxsize, block=False):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
         ssl_context.options |= 1<<2  # OP_LEGACY_SERVER_CONNECT
+        ssl_context.check_hostname = self.verify
         if hasattr(ssl_context, "keylog_filename"):
             sslkeylogfile = environ.get("SSLKEYLOGFILE")
             if sslkeylogfile:
@@ -292,7 +298,7 @@ def main(args = None):
 
     s = requests.Session()
     if args.insecure:
-        s.mount('https://', TLSAdapter())
+        s.mount('https://', TLSAdapter(verify=args.verify))
     s.headers['User-Agent'] = 'PAN GlobalProtect' if args.user_agent is None else args.user_agent
     s.cert = args.cert
 
