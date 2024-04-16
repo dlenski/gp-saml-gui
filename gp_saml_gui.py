@@ -251,6 +251,7 @@ def parse_args(args = None):
     x.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
     x.add_argument('-P','--pkexec-openconnect', action='store_const', dest='exec', const='pkexec', help='Use PolicyKit to exec openconnect')
     x.add_argument('-S','--sudo-openconnect', action='store_const', dest='exec', const='sudo', help='Use sudo to exec openconnect')
+    x.add_argument('-E','--exec-openconnect', action='store_const', dest='exec', const='exec', help='Execute openconnect directly (advanced users)')
     g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
     g.add_argument('--clientos', choices=set(pf2clientos.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
     p.add_argument('-f','--field', dest='extra', action='append', default=[],
@@ -423,10 +424,11 @@ def main(args = None):
             # redirect stdin from this file, before it is closed by the context manager
             # (it will remain accessible via the open file descriptor)
             dup2(tf.fileno(), 0)
+        cmd = ["openconnect"] + openconnect_args
         if args.exec == 'pkexec':
-            cmd = ["pkexec", "--user", "root", "openconnect"] + openconnect_args
+            cmd = ["pkexec", "--user", "root"] + cmd
         elif args.exec == 'sudo':
-            cmd = ["sudo", "openconnect"] + openconnect_args
+            cmd = ["sudo"] + cmd
         execvp(cmd[0], cmd)
 
     else:

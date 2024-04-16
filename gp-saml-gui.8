@@ -16,6 +16,7 @@ gp-saml-gui \- login to a GlobalProtect VPN that uses SAML authentication
 .OP -x
 .OP -P
 .OP -S
+.OP -E
 .OP -u
 .OP --clientos {Windows,Linux,Mac}
 .OP -f EXTRA
@@ -81,6 +82,9 @@ Use PolicyKit (\fBpkexec\fR) to exec openconnect
 .IP
 .B -S, --sudo-openconnect
 Use sudo to exec openconnect
+.IP
+.B -E, --exec-openconnect
+Execute openconnect directly (advanced users)
 .IP
 .B -f, --field
 Extra form field(s) to pass to include in the login query string
