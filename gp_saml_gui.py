@@ -124,10 +124,14 @@ class SAMLLoginView:
         uri = mr.get_uri()
         rs = mr.get_response()
         h = rs.get_http_headers() if rs else None
-        ct = h.get_content_type()
+        ct = h.get_content_type() if h else None
 
         if self.verbose:
             print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
+
+        # if no response or no headers (for e.g. about:blank), skip checking this
+        if not rs or not h:
+            return
 
         # convert to normal dict
         d = {}
