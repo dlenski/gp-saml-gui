@@ -28,7 +28,7 @@ from os import path, dup2, execvp
 from shlex import quote
 from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse, urlencode, urlunsplit
 from html.parser import HTMLParser
 
 
@@ -47,7 +47,7 @@ COOKIE_FIELDS = ('prelogin-cookie', 'portal-userauthcookie')
 class SAMLLoginView:
     def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True, user_agent=None):
         Gtk.init(None)
-        window = Gtk.Window()
+        self.window = window = Gtk.Window()
 
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
 
@@ -128,6 +128,8 @@ class SAMLLoginView:
 
         if self.verbose:
             print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
+        origin = urlunsplit(urlparse(uri)[:2] + ('',)*3)
+        self.window.set_title("SAML Login (%s)" % origin)
 
         # convert to normal dict
         d = {}
