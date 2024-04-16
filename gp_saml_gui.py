@@ -24,7 +24,7 @@ import ssl
 import tempfile
 
 from operator import setitem
-from os import path, dup2, execvp
+from os import path, dup2, execvp, environ
 from shlex import quote
 from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
@@ -216,6 +216,10 @@ class TLSAdapter(requests.adapters.HTTPAdapter):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
         ssl_context.options |= 1<<2  # OP_LEGACY_SERVER_CONNECT
+        if hasattr(ssl_context, "keylog_filename"):
+            sslkeylogfile = environ.get("SSLKEYLOGFILE")
+            if sslkeylogfile:
+                ssl_context.keylog_filename = sslkeylogfile
         self.poolmanager = urllib3.PoolManager(
                 num_pools=connections,
                 maxsize=maxsize,
