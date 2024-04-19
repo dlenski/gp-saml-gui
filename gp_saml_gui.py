@@ -225,11 +225,16 @@ class TLSAdapter(requests.adapters.HTTPAdapter):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
         ssl_context.options |= 1<<2  # OP_LEGACY_SERVER_CONNECT
-        ssl_context.check_hostname = self.verify
+
+        if not self.verify:
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+
         if hasattr(ssl_context, "keylog_filename"):
             sslkeylogfile = environ.get("SSLKEYLOGFILE")
             if sslkeylogfile:
                 ssl_context.keylog_filename = sslkeylogfile
+
         self.poolmanager = urllib3.PoolManager(
                 num_pools=connections,
                 maxsize=maxsize,
