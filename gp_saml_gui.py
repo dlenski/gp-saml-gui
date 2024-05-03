@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
+import warnings
 try:
     import gi
+
     gi.require_version('Gtk', '3.0')
-    gi.require_version('WebKit2', '4.0')
+    try:
+        gi.require_version('WebKit2', '4.1')
+    except ValueError:  # I wish this were ImportError
+        gi.require_version('WebKit2', '4.0')
+        warnings.warn("Using WebKit2Gtk 4.0 (obsolete); please upgrade to WebKit2Gtk 4.1")
     from gi.repository import Gtk, WebKit2, GLib
 except ImportError:
     try:
@@ -11,10 +17,11 @@ except ImportError:
         gi.require_version('Gtk', '3.0')
         gi.require_version('WebKit2', '4.0')
         from pgi.repository import Gtk, WebKit2, GLib
+        warnings.warn("Using PGI and WebKit2Gtk 4.0 (both obsolete); please upgrade to PyGObject and WebKit2Gtk 4.1")
     except ImportError:
         gi = None
 if gi is None:
-    raise ImportError("Either gi (PyGObject) or pgi module is required.")
+    raise ImportError("Either gi (PyGObject) or pgi (obsolete) module is required.")
 
 import argparse
 import urllib3
