@@ -128,7 +128,8 @@ class SAMLLoginView:
 
         if self.verbose:
             print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
-        origin = urlunsplit(urlparse(uri)[:2] + ('',)*3)
+        urip = urlparse(uri)
+        origin = '%s %s' % ('🔒' if urip.scheme == 'https' else '🔴', urip.netloc)
         self.window.set_title("SAML Login (%s)" % origin)
 
         # convert to normal dict
