@@ -20,8 +20,22 @@ except ImportError:
         warnings.warn("Using PGI and WebKit2Gtk 4.0 (both obsolete); please upgrade to PyGObject and WebKit2Gtk 4.1")
     except ImportError:
         gi = None
-if gi is None:
-    raise ImportError("Either gi (PyGObject) or pgi (obsolete) module is required.")
+
+try:
+    import selenium
+    from selenium import webdriver
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.chrome.options import Options as ChromeOptions
+    from selenium.webdriver.chrome.service import Service as ChromeService
+    from selenium.common.exceptions import TimeoutException, WebDriverException
+    from bs4 import BeautifulSoup, Comment
+except ImportError:
+    selenium = None
+
+if gi is None and selenium is False:
+    raise ImportError("Either gi (PyGObject) or selenium or pgi (obsolete) module is required.")
 
 import argparse
 import urllib3
@@ -52,16 +66,35 @@ COOKIE_FIELDS = ('prelogin-cookie', 'portal-userauthcookie')
 
 
 class SAMLLoginView:
+    # common interface needed for `main()`
+
+    def __init__(self):
+        self._closed = False
+        self._success = False
+        self._saml_result = {}
+
+    @property
+    def closed(self):
+        return self._closed
+
+    @property
+    def success(self):
+        return self._success
+
+    @property
+    def saml_result(self):
+        return self._saml_result
+
+class SAMLLoginViewWebKit(SAMLLoginView):
+
     def __init__(self, uri, html, args):
+        super().__init__()
 
         Gtk.init(None)
         self.window = window = Gtk.Window()
 
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
 
-        self.closed = False
-        self.success = False
-        self.saml_result = {}
         self.verbose = args.verbose
 
         self.ctx = WebKit2.WebContext.get_default()
@@ -97,7 +130,7 @@ class SAMLLoginView:
             self.wview.load_uri(uri)
 
     def close(self, window, event):
-        self.closed = True
+        self._closed = True
         Gtk.main_quit()
 
     def log_resources(self, webview, resource, request):
@@ -160,7 +193,7 @@ class SAMLLoginView:
                 if self.verbose > 1:
                     # display everything we found
                     mr.get_data(None, self.log_resource_text, ct[0], ct.params.get('charset'), d)
-            self.saml_result.update(fd, server=urlparse(uri).netloc)
+            self._saml_result.update(fd, server=urlparse(uri).netloc)
             self.check_done()
 
         if not self.success:
@@ -196,21 +229,86 @@ class SAMLLoginView:
         if fd:
             if self.verbose:
                 print("[SAML   ] Got SAML result tags: %s" % fd, file=stderr)
-            self.saml_result.update(fd, server=urlparse(resource.get_uri()).netloc)
+            self._saml_result.update(fd, server=urlparse(resource.get_uri()).netloc)
 
         if not self.check_done():
             # Work around timing/race condition by retrying check_done after 1 second
             GLib.timeout_add(1000, self.check_done)
 
     def check_done(self):
-        d = self.saml_result
+        d = self._saml_result
         if 'saml-username' in d and ('prelogin-cookie' in d or 'portal-userauthcookie' in d):
             if self.verbose:
                 print("[SAML   ] Got all required SAML headers, done.", file=stderr)
-            self.success = True
+            self._success = True
             Gtk.main_quit()
             return True
 
+
+class SAMLLoginViewSelenium(SAMLLoginView):
+
+    if selenium:
+        selenium_version_tuple = tuple(int(v) for v in selenium.__version__.split("."))
+
+    def __init__(self, uri, html, args, username_hint = None):
+        super().__init__()
+
+        # API reference: https://selenium-python.readthedocs.io/index.html
+        options = ChromeOptions()
+        options.add_argument("--disable-extensions")
+        options.add_argument("--app=%s" % (uri))
+        chromedriver_path = "chromedriver" # just assume it is in the PATH
+        driver = None
+        try:
+            if SAMLLoginViewSelenium.selenium_version_tuple < (4,0,0):
+                driver = webdriver.Chrome(options = options, executable_path=chromedriver_path)
+            else:
+                service = ChromeService(chromedriver_path)
+                driver = webdriver.Chrome(options = options, service = service)
+            driver.get(uri)
+
+            # wait for Username field and prefill it, if possible
+            if username_hint:
+                EmailField = (By.ID, "i0116")
+                try:
+                    WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable(EmailField)).send_keys(username_hint)
+                except TimeoutException:
+                    pass
+
+            WebDriverWait(driver, 60).until(self.check_done)
+            current_uri = driver.current_url
+            page_source = driver.page_source
+        except TimeoutException:
+            print("Timeout waiting for interactive authentication", file=stderr)
+            return
+        except WebDriverException as e:
+            print(e.msg, file=stderr)
+            self._closed = True
+            return
+        finally:
+            if driver:
+                try:
+                    driver.close()
+                    driver.quit()
+                except:
+                    pass
+
+        soup = BeautifulSoup(page_source, "html.parser")
+        comment = soup.find(text=lambda text: isinstance(text, Comment))
+        xml = ET.fromstringlist(["<root>", comment, "</root>"])
+        status = xml.find('saml-auth-status')
+        if status is None or not int(status.text):
+            print(ET.tostring(xml).decode(), file=stderr)
+            return
+        for elem in xml:
+            if elem.tag.startswith('saml-') or elem.tag in COOKIE_FIELDS:
+                self._saml_result[elem.tag] = elem.text
+        self._saml_result["server"] = urlparse(current_uri).netloc
+        self._success = True
+
+    def check_done(self, driver):
+        return driver.page_source and driver.page_source.find("<saml-auth-status>") != -1
 
 class TLSAdapter(requests.adapters.HTTPAdapter):
     '''Adapt to older TLS stacks that would raise errors otherwise.
@@ -261,6 +359,12 @@ def parse_args(args = None):
     clientos2ocos = dict(Linux='linux-64', Mac='mac-intel', Windows='win')
     default_clientos = pf2clientos.get(platform, 'Windows')
 
+    webviews = []
+    if gi is not None:
+        webviews.append("WebKit")
+    if selenium:
+        webviews.append("Selenium")
+
     p = argparse.ArgumentParser()
     p.add_argument('server', help='GlobalProtect server (portal or gateway)')
     p.add_argument('--no-verify', dest='verify', action='store_false', default=True, help='Ignore invalid server certificate')
@@ -296,6 +400,7 @@ def parse_args(args = None):
                    help='Use the provided string as the HTTP User-Agent header (default is %(default)r, as used by OpenConnect)')
     p.add_argument('--no-proxy', action='store_true', help='Disable system proxy settings')
     p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
+    g.add_argument('-W', "--webview", choices=webviews, default=webviews[0], help="WebView implementation to use (default is %(default)s)")
     args = p.parse_args(args)
 
     args.ocos = clientos2ocos[args.clientos]
@@ -377,6 +482,9 @@ def main(args = None):
             uri, html = sr, None
         else:
             p.error("Unknown SAML method (%s)" % sam)
+        ccusername = xml.find('ccusername')
+        if ccusername is not None:
+            ccusername = ccusername.text
 
     # launch external browser for debugging
     if args.external:
@@ -387,16 +495,26 @@ def main(args = None):
         webbrowser.open(uri)
         raise SystemExit
 
-    # spawn WebKit view to do SAML interactive login
     if args.verbose:
-        print("Got SAML %s, opening browser..." % sam, file=stderr)
-    slv = SAMLLoginView(uri, html, args)
-    Gtk.main()
-    if slv.closed:
-        print("Login window closed by user.", file=stderr)
-        p.exit(1)
-    if not slv.success:
-        p.error('''Login window closed without producing SAML cookies.''')
+        print("Got SAML %s, opening WebView..." % sam, file=stderr)
+    if args.webview == "Selenium":
+        # spawn selenium chromedriver to do SAML interactive login
+        # (this allows to use a hardware token, like YubiKey)
+        slv = SAMLLoginViewSelenium(uri, html, args, username_hint=ccusername)
+        if slv.closed:
+            print("Login window closed by user.", file=stderr)
+            p.exit(1)
+        if not slv.success:
+            p.error('''Login window closed without producing SAML cookies.''')
+    else:
+        # spawn WebKit view to do SAML interactive login
+        slv = SAMLLoginViewWebKit(uri, html, args)
+        Gtk.main()
+        if slv.closed:
+            print("Login window closed by user.", file=stderr)
+            p.exit(1)
+        if not slv.success:
+            p.error('''Login window closed without producing SAML cookies.''')
 
     # extract response and convert to OpenConnect command-line
     un = slv.saml_result.get('saml-username')
