@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
+import warnings
 try:
     import gi
+
     gi.require_version('Gtk', '3.0')
-    gi.require_version('WebKit2', '4.0')
+    try:
+        gi.require_version('WebKit2', '4.1')
+    except ValueError:  # I wish this were ImportError
+        gi.require_version('WebKit2', '4.0')
+        warnings.warn("Using WebKit2Gtk 4.0 (obsolete); please upgrade to WebKit2Gtk 4.1")
     from gi.repository import Gtk, WebKit2, GLib
 except ImportError:
     try:
@@ -11,10 +17,11 @@ except ImportError:
         gi.require_version('Gtk', '3.0')
         gi.require_version('WebKit2', '4.0')
         from pgi.repository import Gtk, WebKit2, GLib
+        warnings.warn("Using PGI and WebKit2Gtk 4.0 (both obsolete); please upgrade to PyGObject and WebKit2Gtk 4.1")
     except ImportError:
         gi = None
 if gi is None:
-    raise ImportError("Either gi (PyGObject) or pgi module is required.")
+    raise ImportError("Either gi (PyGObject) or pgi (obsolete) module is required.")
 
 import argparse
 import urllib3
@@ -24,11 +31,11 @@ import ssl
 import tempfile
 
 from operator import setitem
-from os import path, dup2, execvp
+from os import path, dup2, execvp, environ
 from shlex import quote
 from sys import stderr, platform
 from binascii import a2b_base64, b2a_base64
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse, urlencode, urlunsplit
 from html.parser import HTMLParser
 
 
@@ -45,30 +52,35 @@ COOKIE_FIELDS = ('prelogin-cookie', 'portal-userauthcookie')
 
 
 class SAMLLoginView:
-    def __init__(self, uri, html=None, verbose=False, cookies=None, verify=True, user_agent=None):
+    def __init__(self, uri, html, args):
+
         Gtk.init(None)
-        window = Gtk.Window()
+        self.window = window = Gtk.Window()
 
         # API reference: https://lazka.github.io/pgi-docs/#WebKit2-4.0
 
         self.closed = False
         self.success = False
         self.saml_result = {}
-        self.verbose = verbose
+        self.verbose = args.verbose
 
         self.ctx = WebKit2.WebContext.get_default()
-        if not verify:
+        if not args.verify:
             self.ctx.set_tls_errors_policy(WebKit2.TLSErrorsPolicy.IGNORE)
         self.cookies = self.ctx.get_cookie_manager()
-        if cookies:
+        if args.cookies:
             self.cookies.set_accept_policy(WebKit2.CookieAcceptPolicy.ALWAYS)
-            self.cookies.set_persistent_storage(cookies, WebKit2.CookiePersistentStorage.TEXT)
+            self.cookies.set_persistent_storage(args.cookies, WebKit2.CookiePersistentStorage.TEXT)
         self.wview = WebKit2.WebView()
 
-        if user_agent is None:
-            user_agent = 'PAN GlobalProtect'
+        if args.no_proxy:
+            data_manager = self.ctx.get_website_data_manager()
+            data_manager.set_network_proxy_settings(WebKit2.NetworkProxyMode.NO_PROXY, None)
+
+        if args.user_agent is None:
+            args.user_agent = 'PAN GlobalProtect'
         settings = self.wview.get_settings()
-        settings.set_user_agent(user_agent)
+        settings.set_user_agent(args.user_agent)
         self.wview.set_settings(settings)
 
         window.resize(500, 500)
@@ -124,10 +136,17 @@ class SAMLLoginView:
         uri = mr.get_uri()
         rs = mr.get_response()
         h = rs.get_http_headers() if rs else None
-        ct = h.get_content_type()
+        ct = h.get_content_type() if h else None
 
         if self.verbose:
             print('[PAGE   ] Finished loading page %s' % uri, file=stderr)
+        urip = urlparse(uri)
+        origin = '%s %s' % ('🔒' if urip.scheme == 'https' else '🔴', urip.netloc)
+        self.window.set_title("SAML Login (%s)" % origin)
+
+        # if no response or no headers (for e.g. about:blank), skip checking this
+        if not rs or not h:
+            return
 
         # convert to normal dict
         d = {}
@@ -212,10 +231,25 @@ class TLSAdapter(requests.adapters.HTTPAdapter):
     We have extracted the relevant value from <openssl/ssl.h>.
 
     '''
+
+    def __init__(self, verify=True):
+        self.verify = verify
+        super().__init__()
+
     def init_poolmanager(self, connections, maxsize, block=False):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
         ssl_context.options |= 1<<2  # OP_LEGACY_SERVER_CONNECT
+
+        if not self.verify:
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+
+        if hasattr(ssl_context, "keylog_filename"):
+            sslkeylogfile = environ.get("SSLKEYLOGFILE")
+            if sslkeylogfile:
+                ssl_context.keylog_filename = sslkeylogfile
+
         self.poolmanager = urllib3.PoolManager(
                 num_pools=connections,
                 maxsize=maxsize,
@@ -251,6 +285,7 @@ def parse_args(args = None):
     x.add_argument('-x','--external', action='store_true', help='Launch external browser (for debugging)')
     x.add_argument('-P','--pkexec-openconnect', action='store_const', dest='exec', const='pkexec', help='Use PolicyKit to exec openconnect')
     x.add_argument('-S','--sudo-openconnect', action='store_const', dest='exec', const='sudo', help='Use sudo to exec openconnect')
+    x.add_argument('-E','--exec-openconnect', action='store_const', dest='exec', const='exec', help='Execute openconnect directly (advanced users)')
     g.add_argument('-u','--uri', action='store_true', help='Treat server as the complete URI of the SAML entry point, rather than GlobalProtect server')
     g.add_argument('--clientos', choices=set(pf2clientos.values()), default=default_clientos, help="clientos value to send (default is %(default)s)")
     p.add_argument('-f','--field', dest='extra', action='append', default=[],
@@ -259,6 +294,7 @@ def parse_args(args = None):
                    help='Allow use of insecure renegotiation or ancient 3DES and RC4 ciphers')
     p.add_argument('--user-agent', '--useragent', default='PAN GlobalProtect',
                    help='Use the provided string as the HTTP User-Agent header (default is %(default)r, as used by OpenConnect)')
+    p.add_argument('--no-proxy', action='store_true', help='Disable system proxy settings')
     p.add_argument('openconnect_extra', nargs='*', help="Extra arguments to include in output OpenConnect command-line")
     args = p.parse_args(args)
 
@@ -284,7 +320,7 @@ def main(args = None):
 
     s = requests.Session()
     if args.insecure:
-        s.mount('https://', TLSAdapter())
+        s.mount('https://', TLSAdapter(verify=args.verify))
     s.headers['User-Agent'] = 'PAN GlobalProtect' if args.user_agent is None else args.user_agent
     s.cert = args.cert
 
@@ -354,7 +390,7 @@ def main(args = None):
     # spawn WebKit view to do SAML interactive login
     if args.verbose:
         print("Got SAML %s, opening browser..." % sam, file=stderr)
-    slv = SAMLLoginView(uri, html, verbose=args.verbose, cookies=args.cookies, verify=args.verify, user_agent=args.user_agent)
+    slv = SAMLLoginView(uri, html, args)
     Gtk.main()
     if slv.closed:
         print("Login window closed by user.", file=stderr)
@@ -393,6 +429,8 @@ def main(args = None):
         if key:
             openconnect_args.insert(1, "--sslkey="+key)
         openconnect_args.insert(1, "--certificate="+cert)
+    if args.no_proxy:
+        openconnect_args.insert(1, "--no-proxy")
 
     openconnect_command = '''    echo {} |\n        sudo openconnect {}'''.format(
         quote(cv), " ".join(map(quote, openconnect_args)))
@@ -423,10 +461,11 @@ def main(args = None):
             # redirect stdin from this file, before it is closed by the context manager
             # (it will remain accessible via the open file descriptor)
             dup2(tf.fileno(), 0)
+        cmd = ["openconnect"] + openconnect_args
         if args.exec == 'pkexec':
-            cmd = ["pkexec", "--user", "root", "openconnect"] + openconnect_args
+            cmd = ["pkexec", "--user", "root"] + cmd
         elif args.exec == 'sudo':
-            cmd = ["sudo", "openconnect"] + openconnect_args
+            cmd = ["sudo"] + cmd
         execvp(cmd[0], cmd)
 
     else:
