@@ -46,7 +46,7 @@ On Debian / Ubuntu, these are packaged as `python3-gi`, `gir1.2-gtk-3.0`, and
 `gir1.2-webkit2-4.1` (or `gir1.2-webkit2-4.0` for older distributions).
 
 ```
-$ sudo apt install python3-gi gir1.2-gtk-3.0 'gir1.2-webkit2-4.*'
+$ sudo apt install python3-gi gir1.2-gtk-3.0 'gir1.2-webkit2-4.*' libgirepository1.0-dev libcairo2-dev
 ```
 
 (Note that the older version, WebKit2GTK 4.0, is [no longer
