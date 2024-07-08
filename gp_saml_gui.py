@@ -29,6 +29,8 @@ import requests
 import xml.etree.ElementTree as ET
 import ssl
 import tempfile
+import pathlib
+import os
 
 from operator import setitem
 from os import path, dup2, execvp, environ
@@ -380,7 +382,9 @@ def main(args = None):
         print("Got SAML %s, opening external browser for debugging..." % sam, file=stderr)
         import webbrowser
         if html:
-            uri = 'data:text/html;base64,' + b2a_base64(html.encode()).decode()
+            with tempfile.NamedTemporaryFile(suffix='.html', mode='w', delete=False) as tf:
+                tf.write(html)
+            uri = pathlib.Path(tf.name).as_uri()
         webbrowser.open(uri)
         raise SystemExit
 
