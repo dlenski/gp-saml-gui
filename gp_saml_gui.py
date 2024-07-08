@@ -77,6 +77,7 @@ class GPConnectionInfo:
     prelogin_extra_fields: dict
     cookiejar: str
     no_proxy: bool
+    retry: int
 
     @property
     def defined_user_agent(self):
@@ -308,6 +309,7 @@ class CLIOpts:
                     path.expanduser(self.args.cookies) if self.args.cookies else ""
                 ),
                 no_proxy=self.args.no_proxy,
+                retry=self.args.retry,
             )
         return self._gp_connection_info
 
@@ -453,6 +455,13 @@ class CLIOpts:
             action="append",
             default=[],
             help='Extra form field(s) to pass to include in the login query string (e.g. "-f magic-cookie-value=deadbeef01234567")',
+        )
+        p.add_argument(
+            "-r",
+            "--retry",
+            default=0,
+            action="count",
+            help="Retry the SAML login process (workaround for saml-auth-status -1)",
         )
         p.add_argument(
             "--allow-insecure-crypto",
@@ -871,6 +880,24 @@ class SAMLLoginView:
         if not self.check_done():
             # Work around timing/race condition by retrying check_done after 1 second
             GLib.timeout_add(1000, self.check_done)
+
+        if (
+            saml_info.get("saml-auth-status", "") == "-1"
+            and self.retried < self.connection_info.retry
+        ):
+            # For some reason, retrying the SAML auth process seems to work.
+            # I guess that the server is not ready to respond to the SAML auth request.
+            # However, starting over with the preloaded cookies seems to work.
+            self.retried += 1
+            logger.info(
+                "[SAML   ] Bad auth. Try again (%s/%s).",
+                self.retried,
+                self.connection_info.retry,
+            )
+            prelogin = SAMLPreLogin(self.connection_info)
+            login_request_info = prelogin.get_login_request_info()
+            logger.info(f"[SAML   ] Got SAML {login_request_info.method}, loading...")
+            self.load(login_request_info.uri, login_request_info.html)
 
     def check_done(self) -> bool:
         "Check if we are done, and if so, quit the main loop"
