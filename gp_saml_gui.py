@@ -946,7 +946,7 @@ def report_about_openconnect_command(openconnect_info):
     print_stderr(openconnect_indented_shell_cmd(openconnect_info))
 
 
-def report_about_test_login_script(gp_connection_info, openconnect_info):
+def report_about_test_login_script(gp_connection_info, saml_login_data):
     "Report about the test script"
     print_stderr(
         "\nSAML response converted to test-globalprotect-login.py invocation:\n"
@@ -954,12 +954,12 @@ def report_about_test_login_script(gp_connection_info, openconnect_info):
     print_stderr(
         "    test-globalprotect-login.py --user={} --clientos={} -p '' \\\n"
         "        https://{}/{} {}={}\n".format(
-            quote(openconnect_info.username),
+            quote(saml_login_data.username),
             quote(gp_connection_info.clientos),
-            quote(openconnect_info.server),
+            quote(gp_connection_info.server),
             quote(_SAML_AUTH_PATH[gp_connection_info.interface]),
-            quote(openconnect_info.cookie_name),
-            quote(openconnect_info.cookie_value),
+            quote(saml_login_data.cookie_name),
+            quote(saml_login_data.cookie_value),
         )
     )
 
@@ -1026,7 +1026,7 @@ def main(args=None):
     if opts.verbose:
         # report to stderr
         report_about_openconnect_command(openconnect_info)
-        report_about_test_login_script(opts.gp_connection_info, openconnect_info)
+        report_about_test_login_script(opts.gp_connection_info, saml_login.login_data)
 
     if opts.exec:
         # report to stderr and launch openconnect
