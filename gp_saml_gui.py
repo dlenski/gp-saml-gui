@@ -288,7 +288,7 @@ class CLIOpts:
             self.parser.error("--key specified without --cert")
 
         if self.args.verbose > 2:
-            logging.warning("")
+            logging.warning("Just one '-v' is enough to increase verbosity")
 
     @property
     def gp_connection_info(self):
@@ -1007,7 +1007,9 @@ def main(args=None):
     # Managed browser window for SAML login
     logger.info("Got SAML %s, opening browser...", login_request_info.method)
     saml_login = SAMLLoginView(opts.gp_connection_info)
+    # Start interactive GUI loop
     saml_login.load(login_request_info.uri, login_request_info.html)
+    # At this point the interactive GUI loop has finished
     if saml_login.closed:
         exit_with_error("Login window closed by user.")
     if not saml_login.success:
