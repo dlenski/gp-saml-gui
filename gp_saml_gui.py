@@ -7,9 +7,9 @@ import logging
 import operator
 import requests
 import ssl
+import sys
 import tempfile
 import urllib3
-import sys
 
 import xml.etree.ElementTree as ET
 
@@ -214,21 +214,21 @@ class OpenConnectInfo:
         return args
 
     def command_line(self):
-        "Return the OpenConnect command line as a string"
+        "Return the quoted OpenConnect command line as a string"
         return " ".join(map(quote, self.cli_args(include_command=True)))
 
     def shell_vars(self):
         "Return a dictionary of shell variables for the OpenConnect command"
         return {
-            "HOST": quote("https://%s/%s" % (self.server, self.urlpath)),
-            "USER": quote(self.username),
-            "COOKIE": quote(self.cookie_value),
-            "OS": quote(self.clientos),
+            "HOST": f"https://{self.server}/{self.urlpath}",
+            "USER": self.username,
+            "COOKIE": self.cookie_value,
+            "OS": self.clientos,
         }
 
     def shell_vars_export(self):
-        "Return a string of shell variables for the OpenConnect command"
-        return "\n".join(f"{k}={v}" for k, v in self.shell_vars().items())
+        "Return a string of quoted shell variables for the OpenConnect command"
+        return "\n".join(f"{k}={quote(v)}" for k, v in self.shell_vars().items())
 
 
 def setup_logger(verbose: int):
@@ -713,8 +713,8 @@ class SAMLLoginView:
         self.login_data = SAMLLoginData(default_server=self.connection_info.server)
 
         self.html_parser = SAMLHtmlParser()
-        self.webview_init()  # initialize 'self.wview'
-        self.window_init()  # initialize 'self.window' and connects 'self.wview' to it
+        self.webview_init()  # sets 'self.wview'
+        self.window_init()  # sets 'self.window' and connects 'self.wview' to it
 
     def window_init(self):
         "Initialize the window and connect the webview to it"
