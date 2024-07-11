@@ -162,7 +162,7 @@ class SAMLLoginData(dict):
 
     @property
     def interface(self):
-        "Get the cookie value from the SAML login data"
+        "Get the interface from the SAML login data"
         return self._interface
 
 
