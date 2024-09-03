@@ -113,7 +113,8 @@ class SAMLLoginView:
         h = rs.get_http_headers() if rs else None
         if h:
             ct, cl = h.get_content_type(), h.get_content_length()
-            content_type, charset = ct[0], ct.params.get('charset')
+            content_type = ct[0]
+            charset = ct.params.get('charset') if ct.params else None
             content_details = '%d bytes of %s%s for ' % (cl, content_type, ('; charset='+charset) if charset else '')
         print('[RECEIVE] %sresource %s %s' % (content_details if h else '', m, uri), file=stderr)
 
