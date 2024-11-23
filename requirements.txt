@@ -1,2 +1,4 @@
 requests
 pygobject
+selenium
+beautifulsoup4
